@@ -134,6 +134,13 @@
             android:parentActivityName=".ui.dashboard.DashboardActivity"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name="com.example.hello_world.MyActivity"
+            android:exported="true"
+            android:label="hello world app"
+            android:parentActivityName=".ui.dashboard.DashboardActivity"
+            android:screenOrientation="portrait"/>
+
         <service
             android:name="nl.tudelft.trustchain.app.service.TrustChainService"
             android:exported="false"

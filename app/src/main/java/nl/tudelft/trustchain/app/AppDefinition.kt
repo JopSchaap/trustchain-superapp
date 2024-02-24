@@ -3,6 +3,7 @@ package nl.tudelft.trustchain.app
 import android.app.Activity
 import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
+import com.example.hello_world.MyActivity
 import nl.tudelft.trustchain.musicdao.MusicActivity
 import nl.tudelft.trustchain.foc.MainActivityFOC
 import nl.tudelft.trustchain.common.R
@@ -61,5 +62,11 @@ enum class AppDefinition(
         "PeerAI",
         R.color.green,
         PeerAIActivity::class.java
+    ),
+    HELLO_WORLD(
+        R.drawable.ic_liquid,
+        "hello world!",
+        R.color.purple,
+        MyActivity::class.java
     )
 }
