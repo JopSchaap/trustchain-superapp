@@ -319,6 +319,7 @@ class AppGossiper(
 
     private fun populateKnownTorrents() {
         appDirectory.listFiles()?.forEachIndexed { _, file ->
+            file.setReadOnly()
             if (file.name.endsWith(TORRENT_EXTENSION)) {
                 TorrentInfo(file).let { torrentInfo ->
                     if (torrentInfo.isValid) {
