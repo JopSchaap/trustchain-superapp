@@ -454,6 +454,9 @@ open class MainActivityFOC : AppCompatActivity() {
             file.createNewFile()
 
             val outStream = FileOutputStream(file)
+
+            file.setReadOnly();
+
             val buff = ByteArray(this.bufferSize)
 
             var len: Int
