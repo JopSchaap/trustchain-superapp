@@ -453,6 +453,7 @@ class AppGossiper(
     }
 
     private fun onDownloadSuccess(torrentName: String) {
+        appDirectory.listFiles { _, file -> file.contains(torrentName) }?.get(0)?.setReadOnly()
         activity.runOnUiThread {
             activity.createTorrent(torrentName)?.let {
                 torrentInfos.add(it)
