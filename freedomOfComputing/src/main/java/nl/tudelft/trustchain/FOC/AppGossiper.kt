@@ -319,6 +319,8 @@ class AppGossiper(
     }
 
     private fun populateKnownTorrents() {
+        // Ensure the apk file is read only see:
+        // https://developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading
         appDirectory.listFiles()?.forEachIndexed { _, file ->
             if(file.name.endsWith(APK_EXTENSION)) {
                 file.setReadOnly()
@@ -456,6 +458,8 @@ class AppGossiper(
     }
 
     private fun onDownloadSuccess(torrentName: String) {
+        // Ensure the apk file is read only see:
+        // https://developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading
         appDirectory.listFiles { _, file -> file.contains(torrentName) && file.endsWith(
             APK_EXTENSION) }?.get(0)?.setReadOnly()
         activity.runOnUiThread {
