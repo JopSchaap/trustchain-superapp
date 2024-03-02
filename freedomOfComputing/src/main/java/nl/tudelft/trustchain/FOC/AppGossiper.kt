@@ -25,6 +25,7 @@ import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.DISPLAY_NAME_APPENDE
 import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.MAGNET_HEADER_STRING
 import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.PRE_HASH_STRING
 import nl.tudelft.trustchain.common.freedomOfComputing.AppPayload
+import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.APK_EXTENSION
 import java.io.File
 import java.util.*
 import java.util.concurrent.CountDownLatch
@@ -319,7 +320,9 @@ class AppGossiper(
 
     private fun populateKnownTorrents() {
         appDirectory.listFiles()?.forEachIndexed { _, file ->
-            file.setReadOnly()
+            if(file.name.endsWith(APK_EXTENSION)) {
+                file.setReadOnly()
+            }
             if (file.name.endsWith(TORRENT_EXTENSION)) {
                 TorrentInfo(file).let { torrentInfo ->
                     if (torrentInfo.isValid) {
@@ -453,7 +456,8 @@ class AppGossiper(
     }
 
     private fun onDownloadSuccess(torrentName: String) {
-        appDirectory.listFiles { _, file -> file.contains(torrentName) }?.get(0)?.setReadOnly()
+        appDirectory.listFiles { _, file -> file.contains(torrentName) && file.endsWith(
+            APK_EXTENSION) }?.get(0)?.setReadOnly()
         activity.runOnUiThread {
             activity.createTorrent(torrentName)?.let {
                 torrentInfos.add(it)
