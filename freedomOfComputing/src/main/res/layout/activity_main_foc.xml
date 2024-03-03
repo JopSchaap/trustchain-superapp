@@ -104,7 +104,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
                 android:paddingEnd="10dp"
-                android:text="@string/torrentCount"
+                android:text="@string/apkCount"
                 android:textColor="#8f8c83" />
         </androidx.appcompat.widget.Toolbar>
 

@@ -62,7 +62,7 @@ open class MainActivityFOC : AppCompatActivity() {
     private var debugVisible = false
     private var bufferSize = 1024 * 5
     private val s = SessionManager()
-    private var torrentAmount = 0
+    private var apkCount = 0
 
     private var appGossiper: AppGossiper? = null
 
@@ -94,7 +94,7 @@ open class MainActivityFOC : AppCompatActivity() {
                 toggleDebugPopUp(binding.debugLayout.debugPopUp)
             }
 
-            binding.torrentCount.text = getString(R.string.torrentCount, torrentAmount)
+            binding.torrentCount.text = getString(R.string.apkCount, apkCount)
 
             copyDefaultApp()
             showAllFiles()
@@ -250,7 +250,7 @@ open class MainActivityFOC : AppCompatActivity() {
         button.backgroundTintList =
             ColorStateList.valueOf(ContextCompat.getColor(applicationContext, R.color.blue))
         button.setTextColor(ContextCompat.getColor(applicationContext, R.color.white))
-        binding.torrentCount.text = getString(R.string.torrentCount, ++torrentAmount)
+        binding.torrentCount.text = getString(R.string.apkCount, ++apkCount)
         button.setOnClickListener {
             loadDynamicCode(fileName)
         }
@@ -331,7 +331,7 @@ open class MainActivityFOC : AppCompatActivity() {
                     val torrentListView = binding.contentMainActivityFocLayout.torrentList
                     torrentList.remove(buttonToBeDeleted)
                     torrentListView.removeView(buttonToBeDeleted)
-                    binding.torrentCount.text = getString(R.string.torrentCount, --torrentAmount)
+                    binding.torrentCount.text = getString(R.string.apkCount, --apkCount)
                     appGossiper?.removeTorrent(fileName)
                 }
             }
