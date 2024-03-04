@@ -37,6 +37,7 @@ import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.trustchain.foc.community.FOCCommunity
 import nl.tudelft.trustchain.foc.databinding.ActivityMainFocBinding
 import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.APK_DOT_EXTENSION
+import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.DATA_DOT_EXTENSION
 import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.TORRENT_DOT_EXTENSION
 import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.DISPLAY_NAME_APPENDER
 import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.PRE_HASH_STRING
@@ -273,7 +274,7 @@ open class MainActivityFOC : AppCompatActivity() {
         val builder: AlertDialog.Builder = AlertDialog.Builder(this)
         builder.setTitle(getString(R.string.createAlertDialogTitle))
         builder.setMessage(getString(R.string.createAlertDialogMsg))
-        builder.setPositiveButton(getString(R.string.cancelButton), null)
+        builder.setPositiveButton(R.string.renameButton) { _, _ -> renameApkDialog(fileName) }
         builder.setNeutralButton(getString(R.string.deleteButton)) { _, _ -> deleteApkFile(fileName) }
         builder.setNegativeButton(getString(R.string.createButton)) { _, _ -> createTorrent(fileName) }
         builder.show()
@@ -307,6 +308,30 @@ open class MainActivityFOC : AppCompatActivity() {
         builder.show()
     }
 
+    private fun renameApkDialog(oldFileName: String) {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+        builder.setTitle(getString(R.string.renameApkDialog))
+        val input = EditText(this)
+        input.inputType = InputType.TYPE_CLASS_TEXT
+        input.setSingleLine()
+        val container = FrameLayout(this)
+        val params =
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        params.leftMargin = resources.getDimensionPixelSize(R.dimen.dialog_margin)
+        params.rightMargin = resources.getDimensionPixelSize(R.dimen.dialog_margin)
+        input.layoutParams = params
+        container.addView(input)
+        builder.setView(container)
+        builder.setNegativeButton(getString(R.string.cancelButton), null)
+        builder.setPositiveButton(getString(R.string.renameButton)) { _, _ ->
+            renameApkFile(oldFileName, input.text.toString() + APK_DOT_EXTENSION)
+        }
+        builder.show()
+    }
+
     private fun deleteApkFile(fileName: String) {
         val files = applicationContext.cacheDir.listFiles()
         if (files != null) {
@@ -334,6 +359,52 @@ open class MainActivityFOC : AppCompatActivity() {
                     binding.torrentCount.text = getString(R.string.torrentCount, --torrentAmount)
                     appGossiper?.removeTorrent(fileName)
                 }
+            }
+        }
+    }
+
+    private fun renameApkFile(oldFileName: String, newFileName: String) {
+        val files = applicationContext.cacheDir.listFiles()
+        if (files != null) {
+            val file =
+                files.find { file ->
+                    getFileName(file.toUri()) == oldFileName
+                }?.renameTo(File(applicationContext.cacheDir.absolutePath + "/" + newFileName))
+
+            // rename torrent file if it exists
+            files.find { torrentFile ->
+                getFileName(torrentFile.toUri()) ==
+                    oldFileName.replace(
+                        APK_DOT_EXTENSION,
+                        TORRENT_DOT_EXTENSION
+                    )
+            }?.renameTo(
+                File(
+                    applicationContext.cacheDir.absolutePath + "/" + newFileName.replace(
+                        APK_DOT_EXTENSION,
+                        TORRENT_DOT_EXTENSION
+                    )
+                )
+            )
+
+            // rename .dat file
+            files.find { torrentFile ->
+                getFileName(torrentFile.toUri()) ==
+                    oldFileName + DATA_DOT_EXTENSION
+            }
+                ?.renameTo(File(applicationContext.cacheDir.absolutePath + "/" + newFileName + DATA_DOT_EXTENSION))
+
+            if (file != null && file) {
+                val buttonToBeDeleted = torrentList.find { button -> button.text == oldFileName }
+                if (buttonToBeDeleted != null) {
+                    val torrentListView = binding.contentMainActivityFocLayout.torrentList
+                    torrentList.remove(buttonToBeDeleted)
+                    torrentListView.removeView(buttonToBeDeleted)
+                    binding.torrentCount.text = getString(R.string.torrentCount, --torrentAmount)
+                    appGossiper?.removeTorrent(oldFileName)
+                }
+
+                createSuccessfulTorrentButton(newFileName.toUri())
             }
         }
     }
