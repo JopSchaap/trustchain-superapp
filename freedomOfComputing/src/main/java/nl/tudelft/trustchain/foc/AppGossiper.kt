@@ -471,9 +471,7 @@ class AppGossiper(
         // Ensure the apk file is read only see:
         // https://developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading
         appDirectory.listFiles { _, file ->
-            file.contains(torrentName) && file.endsWith(
-                APK_EXTENSION
-            )
+            file.contains(torrentName) && file.endsWith(APK_EXTENSION)
         }?.get(0)?.setReadOnly()
         activity.runOnUiThread {
             activity.createTorrent(torrentName)?.let {
