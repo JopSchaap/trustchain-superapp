@@ -363,9 +363,13 @@ open class MainActivityFOC : AppCompatActivity() {
         }
     }
 
-    private fun renameApkFile(oldFileName: String, newFileName: String) {
+    private fun renameApkFile(
+        oldFileName: String,
+        newFileName: String
+    ) {
         val files = applicationContext.cacheDir.listFiles()
         if (files != null) {
+            // rename APK
             val file =
                 files.find { file ->
                     getFileName(file.toUri()) == oldFileName
@@ -380,10 +384,11 @@ open class MainActivityFOC : AppCompatActivity() {
                     )
             }?.renameTo(
                 File(
-                    applicationContext.cacheDir.absolutePath + "/" + newFileName.replace(
-                        APK_DOT_EXTENSION,
-                        TORRENT_DOT_EXTENSION
-                    )
+                    applicationContext.cacheDir.absolutePath + "/" +
+                        newFileName.replace(
+                            APK_DOT_EXTENSION,
+                            TORRENT_DOT_EXTENSION
+                        )
                 )
             )
 
@@ -395,6 +400,7 @@ open class MainActivityFOC : AppCompatActivity() {
                 ?.renameTo(File(applicationContext.cacheDir.absolutePath + "/" + newFileName + DATA_DOT_EXTENSION))
 
             if (file != null && file) {
+                // remove old button
                 val buttonToBeDeleted = torrentList.find { button -> button.text == oldFileName }
                 if (buttonToBeDeleted != null) {
                     val torrentListView = binding.contentMainActivityFocLayout.torrentList
@@ -403,7 +409,7 @@ open class MainActivityFOC : AppCompatActivity() {
                     binding.torrentCount.text = getString(R.string.torrentCount, --torrentAmount)
                     appGossiper?.removeTorrent(oldFileName)
                 }
-
+                // create new button
                 createSuccessfulTorrentButton(newFileName.toUri())
             }
         }
