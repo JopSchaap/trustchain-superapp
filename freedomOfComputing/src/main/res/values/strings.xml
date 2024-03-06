@@ -6,7 +6,7 @@
     <string name="torrentFileName">Another TorrentAPK</string>
     <string name="addButtonDescription">Add</string>
     <string name="progress">75</string>
-    <string name="apkCount">%1$d apk(s) downloaded</string>
+    <string name="apkCount">%1$d/%2$d apk(s) done</string>
     <string name="downloadsInProgress">%1$d</string>
     <string name="downloadsInQueue">In queue: %1$d</string>
     <string name="currentTorrentDownload">Downloading %1$s</string>
