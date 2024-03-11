@@ -1,17 +1,15 @@
 package nl.tudelft.trustchain.foc.util
 
 import com.frostwire.jlibtorrent.Sha1Hash
-import nl.tudelft.ipv8.util.sha256
-import nl.tudelft.ipv8.util.toHex
+import nl.tudelft.ipv8.util.sha1
 import java.io.FileNotFoundException
-import java.lang.IllegalArgumentException
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import kotlin.io.path.absolute
 import kotlin.io.path.createDirectory
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.exists
+import kotlin.io.path.forEachDirectoryEntry
 import kotlin.io.path.isDirectory
 import kotlin.io.path.name
 import kotlin.io.path.readBytes
@@ -23,11 +21,15 @@ import kotlin.jvm.optionals.getOrElse
  * This class handles storing files in the correct directory and allows obtaining the files.
  * The typical location of a file is as follows: "[baseDir]/apk_hash/apk_name.apk".
  */
-class ApkTracker {
+class ApkTracker(private val baseDir: Path) {
     // The directory in which all the apks will be stored
-    private val baseDir = Paths.get("./apk_dir/")
-    private val noHashDir = baseDir.resolve("no_hash/")
-    private val noHashPrefix = "no_hash_known"
+    private val noHashDir = baseDir
+    private val noHashPrefix = "no_hash_known_"
+
+    init {
+        Files.createDirectories(baseDir)
+        Files.createDirectories(noHashDir)
+    }
 
     /**
      * Creates a new apk directory in which the new apk should be saved.
@@ -46,7 +48,6 @@ class ApkTracker {
      */
     fun createApkDir(): Path {
         val newDir = Files.createTempDirectory(baseDir, noHashPrefix)
-        newDir.createDirectory()
         return newDir
     }
 
@@ -60,9 +61,9 @@ class ApkTracker {
             for (subFile in Files.newDirectoryStream(dir)) {
                 subFile.deleteIfExists()
             }
-            dir.deleteIfExists()
+            return dir.deleteIfExists()
         } else if (dir.exists()) {
-            dir.deleteIfExists()
+            return dir.deleteIfExists()
         } else {
             false
         }
@@ -76,23 +77,29 @@ class ApkTracker {
      * @return True iff the hashed directory previously existed and thus was overridden.
      */
     fun setHashKnown(noHashPath: Path): Boolean {
-        if (noHashPath.contains(noHashDir)) {
-            val apkFile =
-                Files.find(
-                    noHashPath,
-                    1,
-                    { file: Path, _ -> file.name.endsWith(ExtensionUtils.APK_DOT_EXTENSION) }
-                ).findFirst().getOrElse {
-                    throw FileNotFoundException("Could not find apk file in the downloaded directory ${noHashPath.absolute()}")
-                }
-            val hash = sha256(apkFile.readBytes())
-            val newDir = baseDir.resolve(hash.toHex())
-            val didReplace = deleteRecursivelyIfExists(newDir)
-            Files.move(noHashPath, newDir)
-            return didReplace
-        } else {
-            throw IllegalArgumentException("the path '$noHashPath` does not lie inside '$noHashDir'")
+        val apkFile =
+            Files.find(
+                noHashPath,
+                1,
+                { file: Path, _ -> file.name.endsWith(ExtensionUtils.APK_DOT_EXTENSION) }
+            ).findFirst().getOrElse {
+                throw FileNotFoundException("Could not find apk file in the downloaded directory ${noHashPath.absolute()}")
+            }
+        val hash = Sha1Hash(sha1(apkFile.readBytes()))
+        val newDir = baseDir.resolve(hash.toHex())
+        val didReplace = deleteRecursivelyIfExists(newDir)
+        Files.move(noHashPath, newDir)
+        return didReplace
+    }
+
+    private fun findApkInDir(dir: Path): Path {
+        if (!dir.exists()) throw FileNotFoundException()
+        for (subFile in Files.newDirectoryStream(dir)) {
+            if (subFile.name.endsWith(ExtensionUtils.APK_DOT_EXTENSION)) {
+                return subFile
+            }
         }
+        throw FileNotFoundException()
     }
 
     /**
@@ -103,12 +110,7 @@ class ApkTracker {
      */
     fun getApkByHash(apkHash: Sha1Hash): Path {
         val apkDir = baseDir.resolve(apkHash.toHex())
-        for (subFile in Files.newDirectoryStream(apkDir)) {
-            if (subFile.name.endsWith(ExtensionUtils.APK_DOT_EXTENSION)) {
-                return subFile
-            }
-        }
-        throw FileNotFoundException()
+        return findApkInDir(apkDir)
     }
 
     /**
@@ -125,5 +127,29 @@ class ApkTracker {
         }
         val iter = Files.find(baseDir, 2, { subFile: Path, _ -> subFile.name == apkNameWithSuffix })
         return iter.findFirst().getOrElse { throw FileNotFoundException() }
+    }
+
+    fun exists(hash: Sha1Hash): Boolean {
+        return try {
+            getApkByHash(hash).exists()
+        } catch (f: FileNotFoundException) {
+            false
+        }
+    }
+
+    fun deleteAPK(apkHash: Sha1Hash): Boolean {
+        return deleteRecursivelyIfExists(baseDir.resolve(apkHash.toHex()))
+    }
+
+    fun listNames(): ArrayList<String> {
+        val result = ArrayList<String>()
+        baseDir.forEachDirectoryEntry {
+            try {
+                result.add(findApkInDir(it).name)
+            } catch (f: FileNotFoundException) {
+                f.printStackTrace()
+            }
+        }
+        return result
     }
 }

@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.frostwire.jlibtorrent.SessionManager
+import com.frostwire.jlibtorrent.Sha1Hash
 import com.frostwire.jlibtorrent.TorrentInfo
 import com.frostwire.jlibtorrent.Vectors
 import com.frostwire.jlibtorrent.swig.add_files_listener
@@ -34,21 +35,28 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import nl.tudelft.ipv8.android.IPv8Android
+import nl.tudelft.ipv8.util.sha1
 import nl.tudelft.trustchain.foc.community.FOCCommunity
 import nl.tudelft.trustchain.foc.community.FOCVote
 import nl.tudelft.trustchain.foc.community.FOCVoteTracker
 import nl.tudelft.trustchain.foc.databinding.ActivityMainFocBinding
+import nl.tudelft.trustchain.foc.util.ApkTracker
 import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.APK_DOT_EXTENSION
 import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.TORRENT_DOT_EXTENSION
 import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.DISPLAY_NAME_APPENDER
 import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.PRE_HASH_STRING
 import java.io.BufferedInputStream
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
 import java.net.URL
 import java.net.URLConnection
+import kotlin.io.path.absolutePathString
+import kotlin.io.path.exists
+import kotlin.io.path.name
+import kotlin.io.path.outputStream
 
 const val CONNECTION_TIMEOUT: Int = 10000
 const val READ_TIMEOUT: Int = 5000
@@ -67,11 +75,14 @@ open class MainActivityFOC : AppCompatActivity() {
     private var torrentAmount = 0
     private val voteTracker: FOCVoteTracker = FOCVoteTracker(this)
     private var appGossiper: AppGossiper? = null
+    private lateinit var apkTracker: ApkTracker
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainFocBinding.inflate(layoutInflater)
         val view = binding.root
+
+        apkTracker = ApkTracker(applicationContext.cacheDir.toPath().resolve("apk_dir"))
 
         try {
             setContentView(view)
@@ -106,6 +117,7 @@ open class MainActivityFOC : AppCompatActivity() {
                     ?.let { AppGossiper.getInstance(s, this, it) }
             appGossiper?.start()
         } catch (e: Exception) {
+            e.printStackTrace()
             printToast(e.toString())
         }
 
@@ -163,43 +175,29 @@ open class MainActivityFOC : AppCompatActivity() {
     }
 
     private fun showAllFiles() {
-        val files = applicationContext.cacheDir.listFiles()
-        if (files != null) {
-            val torrentListView = binding.contentMainActivityFocLayout.torrentList
-            torrentListView.removeAllViews()
-            torrentList.clear()
-            for (file in files) {
-                if (getFileName(file.toUri()).endsWith(APK_DOT_EXTENSION)) {
-                    createSuccessfulTorrentButton(file.toUri())
-                }
-            }
+        val files = apkTracker.listNames()
+        val torrentListView = binding.contentMainActivityFocLayout.torrentList
+        torrentListView.removeAllViews()
+        torrentList.clear()
+        for (file in files) {
+            createSuccessfulTorrentButton(file.toUri())
         }
     }
 
     fun showAddedFile(torrentName: String) {
-        val files = applicationContext.cacheDir.listFiles()
-        if (files != null) {
-            val file =
-                files.find { file ->
-                    getFileName(file.toUri()) == torrentName
-                }
-            if (file != null) {
-                createSuccessfulTorrentButton(file.toUri())
-            }
-        }
+        val file = apkTracker.getApkByName(torrentName)
+        createSuccessfulTorrentButton(file.toFile().toUri())
     }
 
     private fun searchAllFiles(searchVal: String) {
         val torrentListView = binding.contentMainActivityFocLayout.torrentList
         torrentListView.removeAllViews()
         torrentList.clear()
-        val files = applicationContext.cacheDir.listFiles()
-        if (files != null) {
-            for (file in files) {
-                val fileName = getFileName(file.toUri())
-                if (fileName.endsWith(APK_DOT_EXTENSION) && fileName.contains(searchVal)) {
-                    createSuccessfulTorrentButton(file.toUri())
-                }
+        val files = apkTracker.listNames()
+        for (file in files) {
+            val fileName = getFileName(file.toUri())
+            if (fileName.endsWith(APK_DOT_EXTENSION) && fileName.contains(searchVal)) {
+                createSuccessfulTorrentButton(file.toUri())
             }
         }
     }
@@ -209,23 +207,30 @@ open class MainActivityFOC : AppCompatActivity() {
      */
     private fun copyDefaultApp() {
         try {
-            val file = File(this.applicationContext.cacheDir.absolutePath + "/" + DEFAULT_APK)
-            if (!file.exists()) {
-                val outputStream = FileOutputStream(file)
-                val ins =
-                    resources.openRawResource(
-                        resources.getIdentifier(
-                            DEFAULT_APK.split('.').first(),
-                            "raw",
-                            packageName
-                        )
+            val ins =
+                resources.openRawResource(
+                    resources.getIdentifier(
+                        DEFAULT_APK.split('.').first(),
+                        "raw",
+                        packageName
                     )
-                outputStream.write(ins.readBytes())
-                ins.close()
-                outputStream.close()
-                this.createTorrent(DEFAULT_APK)
+                )
+            ins.use {
+                val bytes = ins.readBytes()
+                val hash = Sha1Hash(sha1(bytes))
+                if (apkTracker.exists(hash)) {
+                    // We have already installed this apk thus do nothing
+                    return
+                }
+                val file = apkTracker.createApkDir(hash).resolve(DEFAULT_APK)
+                val outputStream = file.outputStream()
+                outputStream.use {
+                    outputStream.write(bytes)
+                }
             }
+            this.createTorrent(DEFAULT_APK)
         } catch (e: Exception) {
+            e.printStackTrace()
             this.printToast(e.toString())
         }
     }
@@ -336,48 +341,31 @@ open class MainActivityFOC : AppCompatActivity() {
     }
 
     private fun deleteApkFile(fileName: String) {
-        val files = applicationContext.cacheDir.listFiles()
-        if (files != null) {
-            val file =
-                files.find { file ->
-                    getFileName(file.toUri()) == fileName
-                }
-            val deleted = file?.delete()
+        val apkHashStr = apkTracker.getApkByName(fileName).parent.name
+        val apkHash = Sha1Hash(apkHashStr)
+        val deleted = apkTracker.deleteAPK(apkHash)
 
-            // delete torrent file if it exists
-            files.find { torrentFile ->
-                getFileName(torrentFile.toUri()) ==
-                    fileName.replace(
-                        APK_DOT_EXTENSION,
-                        TORRENT_DOT_EXTENSION
-                    )
-            }?.delete()
-
-            if (deleted != null && deleted) {
-                val buttonToBeDeleted = torrentList.find { button -> button.text == fileName }
-                if (buttonToBeDeleted != null) {
-                    val torrentListView = binding.contentMainActivityFocLayout.torrentList
-                    torrentList.remove(buttonToBeDeleted)
-                    torrentListView.removeView(buttonToBeDeleted)
-                    binding.torrentCount.text = getString(R.string.torrentCount, --torrentAmount)
-                    appGossiper?.removeTorrent(fileName)
-                }
+        if (deleted) {
+            val buttonToBeDeleted = torrentList.find { button -> button.text == fileName }
+            if (buttonToBeDeleted != null) {
+                val torrentListView = binding.contentMainActivityFocLayout.torrentList
+                torrentList.remove(buttonToBeDeleted)
+                torrentListView.removeView(buttonToBeDeleted)
+                binding.torrentCount.text = getString(R.string.torrentCount, --torrentAmount)
+                appGossiper?.removeTorrent(fileName)
             }
         }
     }
 
     private fun placeVote(fileName: String) {
-        val files = applicationContext.cacheDir.listFiles()
-        val file =
-            files?.find { file ->
-                getFileName(file.toUri()) == fileName
-            }
-        if (file != null) {
+        try {
+            apkTracker.getApkByName(fileName)
+
             val ipv8 = IPv8Android.getInstance()
             val memberId = ipv8.myPeer.mid
 
             voteTracker.vote(fileName, FOCVote(memberId))
-        } else {
+        } catch (f: FileNotFoundException) {
             printToast("Couldn't find file '$fileName'")
         }
     }
@@ -385,9 +373,10 @@ open class MainActivityFOC : AppCompatActivity() {
     private fun loadDynamicCode(fileName: String) {
         try {
             val intent = Intent(this, ExecutionActivity::class.java)
+            val apkPath = apkTracker.getApkByName(fileName.split("/").last())
             intent.putExtra(
                 "fileName",
-                "${applicationContext.cacheDir}/${fileName.split("/").last()}"
+                apkPath.toString()
             )
             startActivity(intent)
         } catch (e: Exception) {
@@ -422,7 +411,7 @@ open class MainActivityFOC : AppCompatActivity() {
      * The extension of the file must be included (for example, .png)
      */
     fun createTorrent(fileName: String): TorrentInfo? {
-        val file = File(applicationContext.cacheDir.absolutePath + "/" + fileName.split("/").last())
+        val file = apkTracker.getApkByName(fileName.split("/").last())
         if (!file.exists()) {
             runOnUiThread { printToast("Something went wrong, check logs") }
             Log.i("personal", "File doesn't exist!")
@@ -436,7 +425,7 @@ open class MainActivityFOC : AppCompatActivity() {
                     return true
                 }
             }
-        libtorrent.add_files_ex(fs, file.absolutePath, l1, create_flags_t())
+        libtorrent.add_files_ex(fs, file.absolutePathString(), l1, create_flags_t())
         val ct = create_torrent(fs)
         val l2: set_piece_hashes_listener =
             object : set_piece_hashes_listener() {
@@ -444,7 +433,7 @@ open class MainActivityFOC : AppCompatActivity() {
             }
 
         val ec = error_code()
-        libtorrent.set_piece_hashes_ex(ct, file.parent, l2, ec)
+        libtorrent.set_piece_hashes_ex(ct, file.parent.absolutePathString(), l2, ec)
         val torrent = ct.generate()
         val buffer = torrent.bencode()
 
@@ -479,16 +468,10 @@ open class MainActivityFOC : AppCompatActivity() {
 
         val urlTitle = urlName.substringAfterLast('/')
         val url = URL(urlName)
-        val filePath: String = this.applicationContext.cacheDir.absolutePath + "/" + urlTitle
+        val apkDir = apkTracker.createApkDir()
+        val file = apkDir.resolve(urlTitle).toFile()
 
         try {
-            val file = File(filePath)
-
-            if (file.exists()) {
-                deleteApkFile(filePath)
-                this.runOnUiThread { printToast("Replacing existing APK with the same name.") }
-            }
-
             val con: URLConnection = url.openConnection()
             con.connectTimeout = CONNECTION_TIMEOUT
             con.readTimeout = READ_TIMEOUT
@@ -513,8 +496,11 @@ open class MainActivityFOC : AppCompatActivity() {
             outStream.flush()
             outStream.close()
             inStream.close()
+
+            apkTracker.setHashKnown(apkDir)
             this.runOnUiThread { showAllFiles() }
         } catch (e: Exception) {
+            e.printStackTrace()
             this.runOnUiThread { printToast(e.toString()) }
         }
     }
