@@ -129,6 +129,9 @@ class ApkTracker(private val baseDir: Path) {
         return iter.findFirst().getOrElse { throw FileNotFoundException() }
     }
 
+    /**
+     * Checks to see if there exists an apk with the same hash exists.
+     */
     fun exists(hash: Sha1Hash): Boolean {
         return try {
             getApkByHash(hash).exists()
@@ -137,10 +140,16 @@ class ApkTracker(private val baseDir: Path) {
         }
     }
 
+    /**
+     * Deletes the apk with the [apkHash].
+     */
     fun deleteAPK(apkHash: Sha1Hash): Boolean {
         return deleteRecursivelyIfExists(baseDir.resolve(apkHash.toHex()))
     }
 
+    /**
+     * Returns a list of names of all apks.
+     */
     fun listNames(): ArrayList<String> {
         val result = ArrayList<String>()
         baseDir.forEachDirectoryEntry {
