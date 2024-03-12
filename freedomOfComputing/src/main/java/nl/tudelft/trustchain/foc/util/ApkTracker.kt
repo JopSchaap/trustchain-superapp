@@ -24,7 +24,7 @@ import kotlin.jvm.optionals.getOrElse
 class ApkTracker(private val baseDir: Path) {
     // The directory in which all the apks will be stored
     private val noHashDir = baseDir
-    private val noHashPrefix = "no_hash_known_"
+    val noHashPrefix = "no_hash_known_"
 
     init {
         Files.createDirectories(baseDir)
@@ -76,7 +76,7 @@ class ApkTracker(private val baseDir: Path) {
      * @param noHashPath The old directory path.
      * @return True iff the hashed directory previously existed and thus was overridden.
      */
-    fun setHashKnown(noHashPath: Path): Boolean {
+    fun setHashKnown(noHashPath: Path): Path {
         val apkFile =
             Files.find(
                 noHashPath,
@@ -87,9 +87,9 @@ class ApkTracker(private val baseDir: Path) {
             }
         val hash = Sha1Hash(sha1(apkFile.readBytes()))
         val newDir = baseDir.resolve(hash.toHex())
-        val didReplace = deleteRecursivelyIfExists(newDir)
+        deleteRecursivelyIfExists(newDir)
         Files.move(noHashPath, newDir)
-        return didReplace
+        return newDir.resolve(apkFile.name)
     }
 
     private fun findApkInDir(dir: Path): Path {
