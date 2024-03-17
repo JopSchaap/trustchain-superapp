@@ -156,6 +156,7 @@ open class MainActivityFOC : AppCompatActivity() {
         super.onResume()
         resumeUISettings()
         appGossiper?.resume()
+        voteTracker?.requestPullVotes()
     }
 
     override fun onPause() {
@@ -319,6 +320,27 @@ open class MainActivityFOC : AppCompatActivity() {
         val downVote = row.findViewById<Button>(R.id.downVoteId)
         downVote.text =
             getString(R.string.downVote, voteTracker?.getNumberOfVotes(fileName, VoteType.DOWN))
+    }
+
+    fun updateTotalVoteCounts() {
+        val torrentListView = binding.contentMainActivityFocLayout.torrentList
+
+        // Iterate over each child view in the torrentListView
+        for (i in 0 until torrentListView.childCount) {
+            val row = torrentListView.getChildAt(i) as? LinearLayout ?: continue
+
+            // Find the buttons in the current row
+            val apkButton = row.getChildAt(0) as? Button
+            val fileName = apkButton?.text.toString()
+            val upVoteButton = row.findViewById<Button>(R.id.upVoteId)
+            val downVoteButton = row.findViewById<Button>(R.id.downVoteId)
+
+            // Update vote counts for the current row
+            upVoteButton.text =
+                getString(R.string.upVote, voteTracker?.getNumberOfVotes(fileName, VoteType.UP))
+            downVoteButton.text =
+                getString(R.string.downVote, voteTracker?.getNumberOfVotes(fileName, VoteType.DOWN))
+        }
     }
 
     fun createUnsuccessfulTorrentButton(torrentName: String) {
