@@ -27,9 +27,9 @@ class FOCVoteTracker(
 
     fun start() {
         scope.launch {
-            iterativelyDownloadVotes()
-            iterativelySendAllVotes()
-            iterativelyDownloadAllVotes()
+            iterativelyCheckQueues()
+//            iterativelySendAllVotes()
+//            iterativelyDownloadAllVotes()
         }
     }
 
@@ -119,6 +119,7 @@ class FOCVoteTracker(
                 voteMap[key] = HashSet(votes)
             }
         }
+        Log.i("pull based" , "new voteMap :${voteMap} ")
         activity.runOnUiThread {
             activity.updateTotalVoteCounts()
         }
@@ -142,31 +143,19 @@ class FOCVoteTracker(
     /**
      * Method to take votes from the queue and insert them into the tracker
      */
-    private suspend fun iterativelyDownloadVotes() {
+    private suspend fun iterativelyCheckQueues() {
         while (scope.isActive) {
-            Log.i("vote-gossip", "${focCommunity.voteMessagesQueue.size} in Queue")
+            //Log.i("vote-gossip", "${focCommunity.voteMessagesQueue.size} in Queue")
             while (!focCommunity.voteMessagesQueue.isEmpty()) {
                 val (_, payload) = focCommunity.voteMessagesQueue.remove()
                 insertVote(payload.fileName, payload.focVote)
             }
-            delay(gossipDelay)
-        }
-    }
-
-    private suspend fun iterativelySendAllVotes() {
-        while (scope.isActive) {
-            Log.i("pull based", "${focCommunity.pullVoteMessagesSendQueue.size} in Queue")
+            Log.i("pull based", "${focCommunity.pullVoteMessagesSendQueue.size} in  send Queue")
             while (!focCommunity.pullVoteMessagesSendQueue.isEmpty()) {
                 val payload = focCommunity.pullVoteMessagesSendQueue.remove()
                 focCommunity.informAboutPullReceiveVote(voteMap, payload)
             }
-            delay(gossipDelay)
-        }
-    }
-
-    private suspend fun iterativelyDownloadAllVotes() {
-        while (scope.isActive) {
-            Log.i("pull based", "${focCommunity.pullVoteMessagesReceiveQueue.size} in Queue")
+           Log.i("pull based", "${focCommunity.pullVoteMessagesReceiveQueue.size} in receive Queue")
             while (!focCommunity.pullVoteMessagesReceiveQueue.isEmpty()) {
                 val payload = focCommunity.pullVoteMessagesReceiveQueue.remove()
                 mergeVoteMaps(payload.voteMap)
@@ -174,6 +163,27 @@ class FOCVoteTracker(
             delay(gossipDelay)
         }
     }
+
+//    private suspend fun iterativelySendAllVotes() {
+//        Log.i("pull based" ,"iterativelySendAllVotes called" )
+//        while (scope.isActive) {
+//            Log.i("pull based", "${focCommunity.pullVoteMessagesSendQueue.size} in Queue")
+//
+//            delay(gossipDelay)
+//        }
+//    }
+
+//    private suspend fun iterativelyDownloadAllVotes() {
+//        Log.i("pull based" ,"iterativelyDownloadAllVotes called" )
+//        while (scope.isActive) {
+//            Log.i("pull based", "${focCommunity.pullVoteMessagesReceiveQueue.size} in Queue")
+//            while (!focCommunity.pullVoteMessagesReceiveQueue.isEmpty()) {
+//                val payload = focCommunity.pullVoteMessagesReceiveQueue.remove()
+//                mergeVoteMaps(payload.voteMap)
+//            }
+//            delay(gossipDelay)
+//        }
+//    }
 
     /**
      * Display a short message on the screen

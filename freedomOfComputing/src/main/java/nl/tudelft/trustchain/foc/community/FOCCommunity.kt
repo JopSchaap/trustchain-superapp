@@ -87,8 +87,8 @@ class FOCCommunity(
         const val APP_REQUEST = 231
         const val APP = 232
         const val VOTE_MESSAGE = 233
-        const val FOC_THALIS_MESSAGE = 220
-        const val PULL_VOTE_MESSAGE = 234
+        const val FOC_THALIS_MESSAGE = 234
+        const val PULL_VOTE_MESSAGE = 235
     }
 
     override fun informAboutTorrent(torrentName: String) {
@@ -174,8 +174,6 @@ class FOCCommunity(
         setOnEVAErrorCallback(::onEVAErrorCallback)
     }
 
-
-
     private fun onTorrentMessage(packet: Packet) {
         val (peer, payload) = packet.getAuthPayload(FOCMessage)
         val torrentHash =
@@ -208,7 +206,9 @@ class FOCCommunity(
         }
     }
     private fun onMessage(packet: Packet) {
+        Log.i("pull based" , "onMessage called")
         val (peer, payload) = packet.getAuthPayload(FOCMessage)
+        Log.i("pull based" ,payload.message)
         if (payload.message.contains("pull")) {
                 Log.i("pull based", peer.mid + ": " + payload.message)
                 pullVoteMessagesSendQueue.add(peer)
