@@ -87,12 +87,12 @@ class FOCCommunity(
     override var pullVoteMessagesReceiveQueue: Queue<FOCPullVoteMessage> = LinkedList()
 
     object MessageId {
+        const val FOC_THALIS_MESSAGE = 220
         const val TORRENT_MESSAGE = 230
         const val APP_REQUEST = 231
         const val APP = 232
         const val VOTE_MESSAGE = 233
-        const val FOC_THALIS_MESSAGE = 234
-        const val PULL_VOTE_MESSAGE = 235
+        const val PULL_VOTE_MESSAGE = 234
     }
 
     override fun informAboutTorrent(torrentName: String) {
@@ -165,9 +165,9 @@ class FOCCommunity(
     }
 
     init {
+        messageHandlers[MessageId.FOC_THALIS_MESSAGE] = ::onMessage
         messageHandlers[MessageId.TORRENT_MESSAGE] = ::onTorrentMessage
         messageHandlers[MessageId.VOTE_MESSAGE] = ::onVoteMessage
-        messageHandlers[MessageId.FOC_THALIS_MESSAGE] = ::onMessage
         messageHandlers[MessageId.PULL_VOTE_MESSAGE] = ::onPullVoteMessage
         messageHandlers[MessageId.APP_REQUEST] = ::onAppRequestPacket
         messageHandlers[MessageId.APP] = ::onAppPacket
@@ -181,6 +181,15 @@ class FOCCommunity(
         setOnEVAReceiveProgressCallback(::onEVAReceiveProgressCallback)
         setOnEVAReceiveCompleteCallback(::onEVAReceiveCompleteCallback)
         setOnEVAErrorCallback(::onEVAErrorCallback)
+    }
+
+    private fun onMessage(packet: Packet) {
+        val (peer, payload) = packet.getAuthPayload(FOCMessage)
+        Log.i("personal", peer.mid + ": " + payload.message)
+        Log.i("pull based", "onMessage called")
+        if (payload.message.contains("pull")) {
+            pullVoteMessagesSendQueue.add(peer)
+        }
     }
 
     private fun onTorrentMessage(packet: Packet) {
@@ -216,14 +225,6 @@ class FOCCommunity(
         // If TTL is > 0 then forward the message further
         if (payload.TTL > 0u) {
             informAboutVote(payload.fileName, payload.focVote, payload.TTL - 1u)
-        }
-    }
-
-    private fun onMessage(packet: Packet) {
-        Log.i("pull based", "onMessage called")
-        val (peer, payload) = packet.getAuthPayload(FOCMessage)
-        if (payload.message.contains("pull")) {
-            pullVoteMessagesSendQueue.add(peer)
         }
     }
 
