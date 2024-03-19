@@ -21,7 +21,6 @@ abstract class FOCCommunityBase : Community() {
 
     abstract fun informAboutTorrent(torrentName: String)
 
-
     abstract fun informAboutVote(
         fileName: String,
         vote: FOCVote,

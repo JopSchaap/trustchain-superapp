@@ -233,7 +233,7 @@ class FOCCommunity(
         Log.i("pull based", "getAuth passed")
         pullVoteMessagesReceiveQueue.add(payload)
     }
- 
+
     private fun onAppRequestPacket(packet: Packet) {
         val (peer, payload) = packet.getAuthPayload(AppRequestPayload.Deserializer)
         logger.debug { "-> DemoCommunity: Received request $payload from ${peer.mid}" }
