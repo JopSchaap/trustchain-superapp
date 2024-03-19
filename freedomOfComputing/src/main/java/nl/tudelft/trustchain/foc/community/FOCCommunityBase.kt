@@ -25,9 +25,13 @@ abstract class FOCCommunityBase : Community() {
         fileName: String,
         vote: FOCVote
     )
+
     abstract fun informAboutPullSendVote()
 
-    abstract fun informAboutPullReceiveVote(voteMap : HashMap<String, HashSet<FOCVote>>, originPeer : Peer)
+    abstract fun informAboutPullReceiveVote(
+        voteMap: HashMap<String, HashSet<FOCVote>>,
+        originPeer: Peer
+    )
 
     abstract fun sendAppRequest(
         torrentInfoHash: String,

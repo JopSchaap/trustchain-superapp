@@ -79,8 +79,8 @@ class FOCCommunity(
 
     override var torrentMessagesList = ArrayList<Pair<Peer, FOCMessage>>()
     override var voteMessagesQueue: Queue<Pair<Peer, FOCVoteMessage>> = LinkedList()
-    override var pullVoteMessagesSendQueue : Queue<Peer>  = LinkedList()
-    override var pullVoteMessagesReceiveQueue : Queue<FOCPullVoteMessage> = LinkedList()
+    override var pullVoteMessagesSendQueue: Queue<Peer> = LinkedList()
+    override var pullVoteMessagesReceiveQueue: Queue<FOCPullVoteMessage> = LinkedList()
 
     object MessageId {
         const val TORRENT_MESSAGE = 230
@@ -127,21 +127,22 @@ class FOCCommunity(
     }
 
     override fun informAboutPullSendVote() {
-            Log.i("pull based", "telling other peers about my pull request")
-            for (peer in getPeers()) {
-                Log.i("pull based", "sending pull vote request to ${peer.mid}")
-                val packet =
-                    serializePacket(MessageId.FOC_THALIS_MESSAGE, FOCMessage("pull request"), true)
-                Log.i("pull based", "Address ${peer.address} , packet : $packet")
-                send(peer.address, packet)
-            }
+        Log.i("pull based", "telling other peers about my pull request")
+        for (peer in getPeers()) {
+            Log.i("pull based", "sending pull vote request to ${peer.mid}")
+            val packet = serializePacket(MessageId.FOC_THALIS_MESSAGE, FOCMessage("pull request"), true)
+            send(peer.address, packet)
         }
+    }
 
-    override fun informAboutPullReceiveVote(voteMap : HashMap<String, HashSet<FOCVote>>, originPeer : Peer) {
-        Log.i("pull based" , "sending all my votes to peer")
-        val packet = serializePacket(MessageId.PULL_VOTE_MESSAGE , FOCPullVoteMessage(voteMap), true)
+    override fun informAboutPullReceiveVote(
+        voteMap: HashMap<String, HashSet<FOCVote>>,
+        originPeer: Peer
+    ) {
+        Log.i("pull based", "sending all my votes to peer")
+        val packet = serializePacket(MessageId.PULL_VOTE_MESSAGE, FOCPullVoteMessage(voteMap), true)
         Log.i("pull based", "Address ${originPeer.address} , packet : $packet")
-        send(originPeer.address,packet)
+        send(originPeer.address, packet)
     }
 
     override fun sendAppRequest(
@@ -205,19 +206,19 @@ class FOCCommunity(
             voteMessagesQueue.add(Pair(peer, payload))
         }
     }
+
     private fun onMessage(packet: Packet) {
-        Log.i("pull based" , "onMessage called")
+        Log.i("pull based", "onMessage called")
         val (peer, payload) = packet.getAuthPayload(FOCMessage)
-        Log.i("pull based" ,payload.message)
         if (payload.message.contains("pull")) {
-                Log.i("pull based", peer.mid + ": " + payload.message)
-                pullVoteMessagesSendQueue.add(peer)
-            }
+            pullVoteMessagesSendQueue.add(peer)
+        }
     }
 
     private fun onPullVoteMessage(packet: Packet) {
-        Log.i("pull based" , "onPullVoteMessage called")
+        Log.i("pull based", "onPullVoteMessage called")
         val (_, payload) = packet.getAuthPayload(FOCPullVoteMessage)
+        Log.i("pull based", "getAuth passed")
         pullVoteMessagesReceiveQueue.add(payload)
     }
 

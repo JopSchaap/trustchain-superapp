@@ -28,8 +28,6 @@ class FOCVoteTracker(
     fun start() {
         scope.launch {
             iterativelyCheckQueues()
-//            iterativelySendAllVotes()
-//            iterativelyDownloadAllVotes()
         }
     }
 
@@ -88,6 +86,7 @@ class FOCVoteTracker(
     fun requestPullVotes() {
         focCommunity.informAboutPullSendVote()
     }
+
     /**
      * Gets called when a vote from another user has to be added to our state
      * @param fileName APK on which vote is being placed
@@ -111,17 +110,22 @@ class FOCVoteTracker(
      * Gets called when a user receives incoming voting data
      * @param incomingMap incoming data
      */
-    private fun mergeVoteMaps(incomingMap: HashMap<String, HashSet<FOCVote>> ) {
+    private fun mergeVoteMaps(incomingMap: HashMap<String, HashSet<FOCVote>>) {
         for ((key, votes) in incomingMap) {
-            if (voteMap.contains(key)) {
+            if (voteMap.containsKey(key)) {
                 voteMap[key]?.addAll(votes)
             } else { // this means votes from an apk can be received before the apk itself. Needs to be adjusted
-                voteMap[key] = HashSet(votes)
+                voteMap[key] = HashSet()
+                voteMap[key]?.addAll(votes)
             }
         }
-        Log.i("pull based" , "new voteMap :${voteMap} ")
+        Log.i("pull based", "incoming map: $incomingMap")
+        Log.i("pull based", "new voteMap :$voteMap ")
+
         activity.runOnUiThread {
-            activity.updateTotalVoteCounts()
+            for (key in voteMap.keys) {
+                activity.updateVoteCounts(key)
+            }
         }
     }
 
@@ -145,45 +149,31 @@ class FOCVoteTracker(
      */
     private suspend fun iterativelyCheckQueues() {
         while (scope.isActive) {
-            //Log.i("vote-gossip", "${focCommunity.voteMessagesQueue.size} in Queue")
+            // Log.i("vote-gossip", "${focCommunity.voteMessagesQueue.size} in Queue")
             while (!focCommunity.voteMessagesQueue.isEmpty()) {
                 val (_, payload) = focCommunity.voteMessagesQueue.remove()
                 insertVote(payload.fileName, payload.focVote)
             }
-            Log.i("pull based", "${focCommunity.pullVoteMessagesSendQueue.size} in  send Queue")
+            // Log.i("pull based", "${focCommunity.pullVoteMessagesSendQueue.size} in  send Queue")
             while (!focCommunity.pullVoteMessagesSendQueue.isEmpty()) {
                 val payload = focCommunity.pullVoteMessagesSendQueue.remove()
                 focCommunity.informAboutPullReceiveVote(voteMap, payload)
             }
-           Log.i("pull based", "${focCommunity.pullVoteMessagesReceiveQueue.size} in receive Queue")
+            // Log.i("pull based", "${focCommunity.pullVoteMessagesReceiveQueue.size} in receive Queue")
             while (!focCommunity.pullVoteMessagesReceiveQueue.isEmpty()) {
                 val payload = focCommunity.pullVoteMessagesReceiveQueue.remove()
+                Log.i("pull based", "merge votemaps called")
                 mergeVoteMaps(payload.voteMap)
             }
             delay(gossipDelay)
         }
     }
 
-//    private suspend fun iterativelySendAllVotes() {
-//        Log.i("pull based" ,"iterativelySendAllVotes called" )
-//        while (scope.isActive) {
-//            Log.i("pull based", "${focCommunity.pullVoteMessagesSendQueue.size} in Queue")
-//
-//            delay(gossipDelay)
-//        }
-//    }
-
-//    private suspend fun iterativelyDownloadAllVotes() {
-//        Log.i("pull based" ,"iterativelyDownloadAllVotes called" )
-//        while (scope.isActive) {
-//            Log.i("pull based", "${focCommunity.pullVoteMessagesReceiveQueue.size} in Queue")
-//            while (!focCommunity.pullVoteMessagesReceiveQueue.isEmpty()) {
-//                val payload = focCommunity.pullVoteMessagesReceiveQueue.remove()
-//                mergeVoteMaps(payload.voteMap)
-//            }
-//            delay(gossipDelay)
-//        }
-//    }
+    fun createFileKey(fileName: String) {
+        if (!voteMap.containsKey(fileName)) {
+            voteMap[fileName] = HashSet()
+        }
+    }
 
     /**
      * Display a short message on the screen
