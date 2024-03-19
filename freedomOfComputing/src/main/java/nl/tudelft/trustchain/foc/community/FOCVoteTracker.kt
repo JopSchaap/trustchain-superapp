@@ -77,9 +77,11 @@ class FOCVoteTracker(
         } else {
             voteMap[fileName] = hashSetOf(vote)
         }
-        focCommunity.informAboutVote(fileName, vote)
+         // Initial TTL set to 2
+        focCommunity.informAboutVote(fileName, vote, 2u)
     }
 
+   
     /**
      * Gets called when user resumes UI settings
      */
@@ -168,7 +170,7 @@ class FOCVoteTracker(
             delay(gossipDelay)
         }
     }
-
+    
     fun createFileKey(fileName: String) {
         if (!voteMap.containsKey(fileName)) {
             voteMap[fileName] = HashSet()
