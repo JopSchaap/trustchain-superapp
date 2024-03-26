@@ -137,9 +137,9 @@ class FOCCommunity(
     }
 
     override fun sendPullVotesMessage() {
-        Log.i("pull-based", "Sending pull request")
+        Log.i("benchmarking", "Sending pull request")
         for (peer in getPeers()) {
-            Log.i("pull-based", "sending pull vote request to ${peer.mid}")
+            Log.i("benchmarking", "sending pull vote request to ${peer.mid}")
             val packet =
                 serializePacket(MessageId.FOC_THALIS_MESSAGE, FOCMessage(pullRequestString), true)
             send(peer.address, packet)
@@ -181,7 +181,7 @@ class FOCCommunity(
         Log.i("personal", peer.mid + ": " + payload.message)
 
         if (payload.message.contains(pullRequestString)) {
-            Log.i("pull-based", "Sending all my votes to ${peer.address}")
+            Log.i("benchmarking", "Sending all my votes to ${peer.address}")
             val m =
                 serializePacket(
                     MessageId.PULL_VOTE_MESSAGE,
@@ -229,19 +229,20 @@ class FOCCommunity(
     }
 
     private fun onPullVoteMessage(packet: Packet) {
-        Log.i("pull-based", "onPullVoteMessage called")
+        Log.i("benchmarking", "onPullVoteMessage called")
         val (peer, payload) =
             packet.getDecryptedAuthPayload(
                 FOCPullVoteMessage.Deserializer,
                 myPeer.key as PrivateKey
             )
-        Log.i("pull-based", "Received votemap from ${peer.address}")
+        Log.i("benchmarking", "Received votemap from ${peer.address}")
         focVoteTracker.mergeVoteMaps(payload.voteMap)
         activity?.runOnUiThread {
             for (key in focVoteTracker.getCurrentState().keys) {
                 activity?.updateVoteCounts(key)
             }
         }
+        Log.i("benchmarking", "Updated vote maps")
     }
 
     private fun onAppRequestPacket(packet: Packet) {

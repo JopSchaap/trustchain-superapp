@@ -22,7 +22,7 @@ data class FOCPullVoteMessage(val voteMap: HashMap<String, HashSet<FOCSignedVote
             val (payload, localOffset) = deserializeVarLen(buffer, offset)
             val set = FOCPullVoteMessage(SerializationUtils.deserialize(payload))
 
-            Log.i("pull-based", "${localOffset - offset} Bytes")
+            Log.i("benchmarking", "Deserialize FOCPullVoteMessage: ${localOffset - offset} Bytes")
             return Pair(set, offset)
         }
     }
