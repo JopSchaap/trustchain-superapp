@@ -13,7 +13,6 @@ import org.junit.After
 import org.junit.Before
 import java.io.File
 import io.mockk.*
-import java.io.IOException
 import android.util.Log
 
 class FOCVoteTrackerTest {
@@ -59,38 +58,30 @@ class FOCVoteTrackerTest {
         assertTrue(file.exists())
     }
 
-//    @Test
-//    fun checkStoreStateException() {
-//        mockkStatic(android.util.Log::class)
-//        mockkStatic(java.io.File::class)
-//        val fileName = "test"
-//        every { File(fileName).writeBytes(any()) } throws IOException()
-//        every { Log.i(any(), any()) } returns 1
-//        voteTracker.storeState(fileName)
-//        verify { Log.e("vote-tracker-store", any()) }
-//    }
-//
-//    @Test
-//    fun checkLoadStateException() {
-//        mockkStatic(android.util.Log::class)
-//        mockkStatic(java.io.File::class)
-//        every { Log.i(any(), any()) } returns 1
-//        val fileName = "test"
-//        every {File(fileName)} throws Exception()
-//        voteTracker.loadState(fileName)
-//        verify { Log.i("vote-tracker load", any()) }
-//    }
+    @Test
+    fun checkStoreStateException() {
+        mockkStatic(android.util.Log::class)
+        mockkStatic(java.io.File::class)
+        val fileName = "z:\\test"
+        every { Log.e(any(), any()) } returns 1
+        voteTracker.storeState(fileName)
+        verify { Log.e("vote-tracker-store", any()) }
+    }
 
-//    @Test
-//    fun checkAndGetCheck() {
-//
-//    }
+    @Test
+    fun voteWrongSignature() {
+        mockkStatic(android.util.Log::class)
+        every { Log.w(any(), any(String::class)) } returns 1
+        val signedVote = FOCSignedVote(baseVote1, signKey1, privateKey2.pub().keyToBin())
+        voteTracker.vote("test", signedVote)
+        verify { Log.w("vote-gossip", "received vote with invalid pub-key signature combination!") }
+    }
 
     @Test
     fun checkVoteDuplicate() {
         voteTracker.vote("test.apk", signedVote1)
         voteTracker.vote("test.apk", signedVote1)
-        assertEquals(1, voteTracker.getNumberOfVotes("test.apk" , true))
+        assertEquals(1, voteTracker.getNumberOfVotes("test.apk", true))
     }
 
     @Test
@@ -135,9 +126,7 @@ class FOCVoteTrackerTest {
     @Test
     fun getNumberOfVotesCorrect() {
         voteTracker.vote("test.apk", signedVote1)
-        assertEquals(0, voteTracker.getNumberOfVotes("test2.apk", true) )
+        assertEquals(0, voteTracker.getNumberOfVotes("test2.apk", true))
         assertEquals(1, voteTracker.getNumberOfVotes("test.apk", true))
     }
-
-
 }
