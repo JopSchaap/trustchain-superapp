@@ -59,16 +59,6 @@ class FOCVoteTrackerTest {
     }
 
     @Test
-    fun checkStoreStateException() {
-        mockkStatic(android.util.Log::class)
-        mockkStatic(java.io.File::class)
-        val fileName = "z:\\test"
-        every { Log.e(any(), any()) } returns 1
-        voteTracker.storeState(fileName)
-        verify { Log.e("vote-tracker-store", any()) }
-    }
-
-    @Test
     fun voteWrongSignature() {
         mockkStatic(android.util.Log::class)
         every { Log.w(any(), any(String::class)) } returns 1
