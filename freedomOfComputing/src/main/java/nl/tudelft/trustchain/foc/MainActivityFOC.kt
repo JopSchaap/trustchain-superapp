@@ -35,6 +35,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import nl.tudelft.ipv8.android.IPv8Android
+import nl.tudelft.trustchain.common.freedomOfComputing.InstalledApps
 import nl.tudelft.trustchain.foc.community.FOCCommunity
 import nl.tudelft.trustchain.foc.community.FOCVote
 import nl.tudelft.trustchain.foc.community.FOCVoteTracker
@@ -346,10 +347,14 @@ open class MainActivityFOC : AppCompatActivity() {
         val upVoteCount = voteTracker?.getNumberOfVotes(fileName, VoteType.UP)
         val downVoteCount = voteTracker?.getNumberOfVotes(fileName, VoteType.DOWN)
         builder.setMessage(getString(R.string.createAlertDialogMsg, upVoteCount, downVoteCount))
-        builder.setPositiveButton(getString(R.string.cancelButton), null)
+        builder.setPositiveButton(getString(R.string.installButton), { _, _ -> addToHome(fileName) })
         builder.setNeutralButton(getString(R.string.deleteButton)) { _, _ -> deleteApkFile(fileName) }
         builder.setNegativeButton(getString(R.string.createButton)) { _, _ -> createTorrent(fileName) }
         builder.show()
+    }
+
+    private fun addToHome(fileName: String) {
+        InstalledApps.addApp(fileName.removeSuffix(APK_DOT_EXTENSION))
     }
 
     private fun createDownloadDialog() {

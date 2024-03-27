@@ -127,7 +127,6 @@ public class ExecutionActivity extends AppCompatActivity {
         try {
             String mainFragmentClass = getMainFragmentClass(apkPath);
             Class<?> fragmentClass = classLoader.loadClass((mainFragmentClass != null) ? mainFragmentClass : "com.execmodule." + activeApp + ".MainFragment");
-            InstalledApps.INSTANCE.addApp(activeApp, fragmentClass);
             this.mainFragment = (Fragment) fragmentClass.newInstance();
             Fragment.SavedState state = this.getState();
             if (state != null) {

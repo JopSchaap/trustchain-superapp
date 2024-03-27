@@ -43,19 +43,17 @@ class AppLoader(
                             isPreferred = pApps.contains(app.appDefinition.appName)
                         )
                     }.toMutableSet()
-                // TODO add FOC apps
                 Log.i("foc installer", "installing")
                 Log.i("foc installer", "$color")
                 for (i in 0..<InstalledApps.appNames.size) {
                     val name = InstalledApps.appNames[i]
-                    val javaClass = InstalledApps.appClasses[i]
                     tempApps.add(
                         DashboardItem(
-                            AppDefinition(
+                            FOCAppDefinition(
                                 icon,
                                 name,
                                 color,
-                                javaClass
+                                name
                             ),
 //                                AppDefinition.create(name, javaClass),
                             isPreferred = true
