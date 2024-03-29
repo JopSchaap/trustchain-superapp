@@ -20,6 +20,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.lang.Exception
 import java.util.*
+import kotlin.collections.HashSet
 import kotlin.math.floor
 import kotlin.math.ln
 import kotlin.math.max
@@ -95,6 +96,7 @@ class FOCCommunity(
         const val APP = 232
         const val VOTE_MESSAGE = 233
         const val PULL_VOTE_MESSAGE = 234
+        const val PULL_REQUEST = 235
     }
 
     override fun informAboutTorrent(torrentName: String) {
@@ -136,12 +138,14 @@ class FOCCommunity(
         }
     }
 
-    override fun sendPullVotesMessage() {
+    override fun sendPullVotesMessage(ids: HashSet<UUID>) {
         Log.i("pull-based", "Sending pull request")
+        val message = FOCPullRequestMessage(ids)
+        Log.i("pull-based", "I already have ${ids.size} votes")
         for (peer in getPeers()) {
             Log.i("pull-based", "sending pull vote request to ${peer.mid}")
             val packet =
-                serializePacket(MessageId.FOC_THALIS_MESSAGE, FOCMessage(pullRequestString), true)
+                serializePacket(MessageId.PULL_REQUEST, message, true)
             send(peer.address, packet)
         }
     }
@@ -162,6 +166,7 @@ class FOCCommunity(
         messageHandlers[MessageId.TORRENT_MESSAGE] = ::onTorrentMessage
         messageHandlers[MessageId.VOTE_MESSAGE] = ::onVoteMessage
         messageHandlers[MessageId.PULL_VOTE_MESSAGE] = ::onPullVoteMessage
+        messageHandlers[MessageId.PULL_REQUEST] = ::onPullRequest
         messageHandlers[MessageId.APP_REQUEST] = ::onAppRequestPacket
         messageHandlers[MessageId.APP] = ::onAppPacket
         evaProtocolEnabled = true
@@ -179,18 +184,6 @@ class FOCCommunity(
     private fun onMessage(packet: Packet) {
         val (peer, payload) = packet.getAuthPayload(FOCMessage)
         Log.i("personal", peer.mid + ": " + payload.message)
-
-        if (payload.message.contains(pullRequestString)) {
-            Log.i("pull-based", "Sending all my votes to ${peer.address}")
-            val m =
-                serializePacket(
-                    MessageId.PULL_VOTE_MESSAGE,
-                    FOCPullVoteMessage(focVoteTracker.getCurrentState()),
-                    encrypt = true,
-                    recipient = peer
-                )
-            evaSendBinary(peer, VOTING_ATTACHMENT, UUID.randomUUID().toString(), m)
-        }
     }
 
     private fun onTorrentMessage(packet: Packet) {
@@ -242,6 +235,21 @@ class FOCCommunity(
                 activity?.updateVoteCounts(key)
             }
         }
+    }
+
+    private fun onPullRequest(packet: Packet) {
+        Log.i("pull-based", "Received Pull Request")
+        val (peer, payload) = packet.getAuthPayload(FOCPullRequestMessage)
+        Log.i("pull-based", "Pull Request has ${payload.ids.size} votes")
+        val voteMap = focVoteTracker.getVotesToSend(payload.ids)
+        val m =
+            serializePacket(
+                MessageId.PULL_VOTE_MESSAGE,
+                FOCPullVoteMessage(voteMap),
+                encrypt = true,
+                recipient = peer
+            )
+        evaSendBinary(peer, VOTING_ATTACHMENT, UUID.randomUUID().toString(), m)
     }
 
     private fun onAppRequestPacket(packet: Packet) {
