@@ -61,7 +61,7 @@ class FOCCommunityMock(
     ) {
     }
 
-    override fun sendPullVotesMessage() {
+    override fun sendPullVotesMessage(ids: HashSet<UUID>) {
     }
 
     override fun sendAppRequest(

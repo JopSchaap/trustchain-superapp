@@ -73,7 +73,7 @@ object FOCVoteTracker {
      */
     fun getVotesToSend(ids: HashSet<UUID>): HashMap<String, HashSet<FOCSignedVote>> {
         val res = HashMap<String, HashSet<FOCSignedVote>>()
-        voteMap.forEach{ entry ->
+        voteMap.forEach { entry ->
             entry.value.forEach { vote ->
                 if (!ids.contains(vote.id)) {
                     if (res.containsKey(entry.key)) {

@@ -8,7 +8,8 @@ import org.apache.commons.lang3.SerializationUtils
 import java.io.Serializable
 import java.util.UUID
 
-data class FOCPullRequestMessage(val ids: HashSet<UUID>) : Serializable,
+data class FOCPullRequestMessage(val ids: HashSet<UUID>) :
+    Serializable,
     nl.tudelft.ipv8.messaging.Serializable {
     override fun serialize(): ByteArray {
         return serializeVarLen(SerializationUtils.serialize(ids))

@@ -38,7 +38,6 @@ class FOCCommunity(
 
     private val appDirectory = context.cacheDir
     var activity: MainActivityFOC? = null
-    private val pullRequestString = "pull request"
 
     private lateinit var evaSendCompleteCallback: (
         peer: Peer,
