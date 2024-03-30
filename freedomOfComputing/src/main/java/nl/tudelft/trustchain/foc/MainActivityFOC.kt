@@ -159,7 +159,7 @@ open class MainActivityFOC : AppCompatActivity() {
         appGossiper?.resume()
         val ids = HashSet<UUID>()
         voteTracker.getCurrentState().forEach { (_, u) -> u.forEach { vote -> ids.add(vote.id) } }
-        focCommunity?.sendPullVotesMessage(ids)
+        focCommunity?.sendPullRequest(ids)
     }
 
     override fun onPause() {

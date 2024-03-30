@@ -24,7 +24,7 @@ abstract class FOCCommunityBase : Community() {
         ttl: Int
     )
 
-    abstract fun sendPullVotesMessage(ids: HashSet<UUID>)
+    abstract fun sendPullRequest(ids: HashSet<UUID>)
 
     abstract fun sendAppRequest(
         torrentInfoHash: String,
