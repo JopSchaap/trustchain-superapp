@@ -14,6 +14,9 @@ import nl.tudelft.trustchain.eurotoken.EuroTokenMainActivity
 import nl.tudelft.trustchain.valuetransfer.ValueTransferMainActivity
 import nl.tudelft.trustchain.peerai.PeerAIActivity
 
+/**
+ * A definition of a sub-app, which can be shown in the [nl.tudelft.trustchain.app.ui.dashboard.DashboardActivity].
+ */
 open class AppDefinition(
     @DrawableRes val icon: Int,
     val appName: String,
@@ -21,10 +24,21 @@ open class AppDefinition(
     val activity: Class<out Activity>,
     val disableImageTint: Boolean = false,
 ) {
+    /**
+     * Creates an intent to launch this application.
+     *
+     * To start the application run [Activity.startActivity] with this intent.
+     *
+     * @param context The application context.
+     * @return The intent for starting this application.
+     */
     open fun getIntent(context: Context): Intent {
         return Intent(context, this.activity)
     }
 
+    /**
+     * Static variables that hold the default icon and color for FOC applications
+     */
     companion object Color {
         fun create(
             name: String,
@@ -38,6 +52,9 @@ open class AppDefinition(
         @ColorRes val color = R.color.dark_gray
     }
 
+    /**
+     * An Enum containing all the default (non-FOC) apps installed
+     */
     enum class BaseAppDefinitions(val appDefinition: AppDefinition) {
         CURRENCY_II(
             AppDefinition(
