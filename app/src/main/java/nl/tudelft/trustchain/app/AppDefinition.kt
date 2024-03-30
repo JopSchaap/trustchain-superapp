@@ -40,12 +40,6 @@ open class AppDefinition(
      * Static variables that hold the default icon and color for FOC applications
      */
     companion object Color {
-        fun create(
-            name: String,
-            javaClass: Class<out Activity>
-        ): AppDefinition {
-            return AppDefinition(icon, name, color, javaClass)
-        }
 
         @DrawableRes val icon = R.drawable.ic_bug_report_black_24dp
 
