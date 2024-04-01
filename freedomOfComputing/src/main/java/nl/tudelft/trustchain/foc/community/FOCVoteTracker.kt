@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import nl.tudelft.ipv8.keyvault.PrivateKey
+import nl.tudelft.trustchain.common.freedomOfComputing.InstalledApps
 import nl.tudelft.trustchain.foc.MainActivityFOC
 import nl.tudelft.trustchain.foc.util.ExtensionUtils
 import java.io.ByteArrayInputStream
@@ -25,6 +26,7 @@ class FOCVoteTracker(
     private var voteMap: HashMap<String, HashSet<FOCSignedVote>> = HashMap()
     private val gossipDelay: Long = 1000
     private val scope = CoroutineScope(Dispatchers.IO)
+    private val thresholdForInstall = 10
 
     fun start() {
         scope.launch {
@@ -135,6 +137,9 @@ class FOCVoteTracker(
         Log.i("pull based", "incoming map: $incomingMap")
         Log.i("pull based", "new voteMap :$voteMap ")
 
+        // check for vote counts above thresholds and add to home screen if reached
+        checkThresholds()
+
         activity.runOnUiThread {
             for (key in voteMap.keys) {
                 activity.updateVoteCounts(key)
@@ -155,6 +160,15 @@ class FOCVoteTracker(
             return 0
         }
         return voteMap[fileName]!!.count { v -> v.vote.voteType == voteType }
+    }
+
+    private fun checkThresholds() {
+        for (fileName in voteMap.keys) {
+            val upVotes = getNumberOfVotes(fileName, VoteType.UP)
+            if (upVotes >= thresholdForInstall && upVotes - getNumberOfVotes(fileName, VoteType.DOWN) >= thresholdForInstall) {
+                InstalledApps.addApp(fileName)
+            }
+        }
     }
 
     /**

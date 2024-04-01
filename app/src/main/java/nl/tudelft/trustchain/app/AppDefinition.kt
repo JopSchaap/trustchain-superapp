@@ -40,7 +40,6 @@ open class AppDefinition(
      * Static variables that hold the default icon and color for FOC applications
      */
     companion object Color {
-
         @DrawableRes val icon = R.drawable.ic_bug_report_black_24dp
 
         @ColorRes val color = R.color.dark_gray

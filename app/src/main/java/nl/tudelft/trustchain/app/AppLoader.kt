@@ -53,18 +53,19 @@ class AppLoader(
 
     fun update() =
         runBlocking {
-            apps = if (firstRun) {
-                setPreferredAppList(DEFAULT_APPS)
-                getAllApps().map { DashboardItem(it) }.toSet()
-            } else {
-                val pApps = getPreferredAppList()
-                getAllApps().map { app ->
-                    DashboardItem(
-                        app,
-                        isPreferred = pApps.contains(app.appName)
-                    )
-                }.toSet()
-            }
+            apps =
+                if (firstRun) {
+                    setPreferredAppList(DEFAULT_APPS)
+                    getAllApps().map { DashboardItem(it) }.toSet()
+                } else {
+                    val pApps = getPreferredAppList()
+                    getAllApps().map { app ->
+                        DashboardItem(
+                            app,
+                            isPreferred = pApps.contains(app.appName)
+                        )
+                    }.toSet()
+                }
         }
 
     private suspend fun getAllApps(): Set<AppDefinition> {
