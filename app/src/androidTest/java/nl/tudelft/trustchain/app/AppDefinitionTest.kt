@@ -11,7 +11,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AppDefinitionTest {
-
     @Test
     fun getIntent() {
         val appDefinition = AppDefinition(0, "test_app", 0, DashboardActivity::class.java)

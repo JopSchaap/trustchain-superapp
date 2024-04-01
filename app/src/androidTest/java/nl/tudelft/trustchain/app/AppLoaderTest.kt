@@ -16,16 +16,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.UUID
 
-
 @RunWith(AndroidJUnit4::class)
 class AppLoaderTest {
-
     private val testDataStoreName: String = UUID.randomUUID().toString()
     private val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
     private val dataStore =
         PreferenceDataStoreFactory.create(
             produceFile =
-            { context.preferencesDataStoreFile(testDataStoreName) }
+                { context.preferencesDataStoreFile(testDataStoreName) }
         )
 
     @After
