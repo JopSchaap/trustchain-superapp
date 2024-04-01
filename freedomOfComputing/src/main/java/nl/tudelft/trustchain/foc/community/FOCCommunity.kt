@@ -15,12 +15,14 @@ import nl.tudelft.ipv8.messaging.eva.TransferException
 import nl.tudelft.ipv8.messaging.eva.TransferProgress
 import nl.tudelft.trustchain.common.freedomOfComputing.AppPayload
 import nl.tudelft.trustchain.common.freedomOfComputing.AppRequestPayload
+import nl.tudelft.trustchain.foc.FOCVoteTracker
+import nl.tudelft.trustchain.foc.MainActivityFOC
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.Exception
 import java.util.*
 import kotlin.math.floor
-import kotlin.math.log10
+import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
 
@@ -35,6 +37,8 @@ class FOCCommunity(
     val discoveredAddressesContacted: MutableMap<IPv4Address, Date> = mutableMapOf()
 
     private val appDirectory = context.cacheDir
+    var activity: MainActivityFOC? = null
+    private val pullRequestString = "pull request"
 
     private lateinit var evaSendCompleteCallback: (
         peer: Peer,
@@ -82,9 +86,8 @@ class FOCCommunity(
     }
 
     override var torrentMessagesList = ArrayList<Pair<Peer, FOCMessage>>()
-    override var voteMessagesQueue: Queue<Pair<Peer, FOCVoteMessage>> = LinkedList()
-    override var pullVoteMessagesSendQueue: Queue<Peer> = LinkedList()
-    override var pullVoteMessagesReceiveQueue: Queue<FOCPullVoteMessage> = LinkedList()
+
+    private val focVoteTracker: FOCVoteTracker = FOCVoteTracker
 
     object MessageId {
         const val FOC_THALIS_MESSAGE = 220
@@ -95,12 +98,13 @@ class FOCCommunity(
         const val PULL_VOTE_MESSAGE = 234
     }
 
+    /**
+     * When a user adds a torrent, it is broadcasted to all peers
+     * @param torrentName name of torrent
+     */
     override fun informAboutTorrent(torrentName: String) {
         if (torrentName != "") {
-            val peers = getPeers().shuffled()
-            val n = peers.size
-            // Gossip to log(n) peers
-            for (peer in peers.take(max(floor(log10(n.toDouble())).toInt(), min(n, 3)))) {
+            for (peer in getPeers()) {
                 val packet =
                     serializePacket(
                         MessageId.TORRENT_MESSAGE,
@@ -112,16 +116,25 @@ class FOCCommunity(
         }
     }
 
+    /**
+     * When a user votes on an apk, the result of the vote is hot potatoed to a random subset of peers
+     * @param fileName name of APK
+     * @param vote signed vote of the user
+     * @param ttl The Time-To-Live (TTL) value indicating the maximum number of hops the vote information can traverse in the gossip network.
+     */
     override fun informAboutVote(
         fileName: String,
         vote: FOCSignedVote,
-        ttl: UInt
+        ttl: Int
     ) {
         Log.i(
             "vote-gossip",
-            "Informing about ${vote.vote.voteType} vote on $fileName from ${vote.vote.memberId}"
+            "Informing about ${vote.vote.isUpVote} vote on $fileName from ${vote.vote.memberId}"
         )
-        for (peer in getPeers()) {
+        val peers = getPeers().shuffled()
+        val n = peers.size
+        // Gossip to log(n) peers
+        for (peer in peers.take(max(floor(ln(n.toDouble())).toInt(), min(n, 3)))) {
             Log.i("vote-gossip", "Sending vote to ${peer.mid}")
             val packet =
                 serializePacket(
@@ -134,25 +147,23 @@ class FOCCommunity(
         }
     }
 
-    override fun informAboutPullSendVote() {
-        Log.i("pull based", "telling other peers about my pull request")
+    override fun sendPullVotesMessage() {
+        Log.i("pull-based", "Sending pull request")
         for (peer in getPeers()) {
-            Log.i("pull based", "sending pull vote request to ${peer.mid}")
-            val packet = serializePacket(MessageId.FOC_THALIS_MESSAGE, FOCMessage("pull request"), true)
+            Log.i("pull-based", "sending pull vote request to ${peer.mid}")
+            val packet =
+                serializePacket(MessageId.FOC_THALIS_MESSAGE, FOCMessage(pullRequestString), true)
             send(peer.address, packet)
         }
     }
 
-    override fun informAboutPullReceiveVote(
-        voteMap: HashMap<String, HashSet<FOCSignedVote>>,
-        originPeer: Peer
-    ) {
-        Log.i("pull based", "sending all my votes to peer")
-        val packet = serializePacket(MessageId.PULL_VOTE_MESSAGE, FOCPullVoteMessage(voteMap), true)
-        Log.i("pull based", "Address ${originPeer.address} , packet : $packet")
-        send(originPeer.address, packet)
-    }
-
+    /**
+     * Sends an application request to peer. It  constructs an application
+     * request payload with the given torrent info hash and UUID, then sends it to the specified peer.
+     * @param torrentInfoHash the hash of the given torrent
+     * @param peer  the peer
+     * @uuid the uuid (Universally Unique Identifier) uniquely identifies the request in the application layer
+     */
     override fun sendAppRequest(
         torrentInfoHash: String,
         peer: Peer,
@@ -186,12 +197,26 @@ class FOCCommunity(
     private fun onMessage(packet: Packet) {
         val (peer, payload) = packet.getAuthPayload(FOCMessage)
         Log.i("personal", peer.mid + ": " + payload.message)
-        Log.i("pull based", "onMessage called")
-        if (payload.message.contains("pull")) {
-            pullVoteMessagesSendQueue.add(peer)
+
+        if (payload.message.contains(pullRequestString)) {
+            Log.i("pull-based", "Sending all my votes to ${peer.address}")
+            val m =
+                serializePacket(
+                    MessageId.PULL_VOTE_MESSAGE,
+                    FOCPullVoteMessage(focVoteTracker.getCurrentState()),
+                    encrypt = true,
+                    recipient = peer
+                )
+            evaSendBinary(peer, VOTING_ATTACHMENT, UUID.randomUUID().toString(), m)
         }
     }
 
+    /**
+     * Function to process and incoming torrent magnet link in the form of a packet.
+     * checks if the torrent message is already present in the list of received messages,
+     * and adds it if not already present.
+     * @param packet received packet
+     */
     private fun onTorrentMessage(packet: Packet) {
         val (peer, payload) = packet.getAuthPayload(FOCMessage)
         val torrentHash =
@@ -209,30 +234,43 @@ class FOCCommunity(
         }
     }
 
+    /**
+     * Invoked when a peer receives an VOTE_MESSAGE. Once received, it updates
+     * the current voteMap and updates the changes in hte UI
+     * @param packet received packet
+     */
     private fun onVoteMessage(packet: Packet) {
         Log.i("vote-gossip", "OnVoteMessage Called")
         val (peer, payload) = packet.getAuthPayload(FOCVoteMessage)
         Log.i(
             "vote-gossip",
-            "Received vote message from ${peer.mid} for file ${payload.fileName} and direction ${payload.focSignedVote.vote.voteType}"
+            "Received vote message from ${peer.mid} for file ${payload.fileName} and direction ${payload.focSignedVote.vote.isUpVote}"
         )
-        if (voteMessagesQueue.none {
-                it.second == payload
-            }
-        ) {
-            voteMessagesQueue.add(Pair(peer, payload))
+        focVoteTracker.vote(payload.fileName, payload.focSignedVote)
+
+        activity?.runOnUiThread {
+            activity?.updateVoteCounts(payload.fileName)
         }
         // If TTL is > 0 then forward the message further
-        if (payload.TTL > 0u) {
-            informAboutVote(payload.fileName, payload.focSignedVote, payload.TTL - 1u)
+        if (payload.TTL > 0) {
+            informAboutVote(payload.fileName, payload.focSignedVote, payload.TTL - 1)
         }
     }
 
     private fun onPullVoteMessage(packet: Packet) {
-        Log.i("pull based", "onPullVoteMessage called")
-        val (_, payload) = packet.getAuthPayload(FOCPullVoteMessage)
-        Log.i("pull based", "getAuth passed")
-        pullVoteMessagesReceiveQueue.add(payload)
+        Log.i("pull-based", "onPullVoteMessage called")
+        val (peer, payload) =
+            packet.getDecryptedAuthPayload(
+                FOCPullVoteMessage.Deserializer,
+                myPeer.key as PrivateKey
+            )
+        Log.i("pull-based", "Received votemap from ${peer.address}")
+        focVoteTracker.mergeVoteMaps(payload.voteMap)
+        activity?.runOnUiThread {
+            for (key in focVoteTracker.getCurrentState().keys) {
+                activity?.updateVoteCounts(key)
+            }
+        }
     }
 
     private fun onAppRequestPacket(packet: Packet) {
@@ -295,6 +333,15 @@ class FOCCommunity(
         return null
     }
 
+    /***
+     *This function evaluates whether the torrent file
+     * is suitable for downloading based on the directory.
+     * it checks if the file extension is either "jar" or "apk" and if the file size
+     * does not exceed the total size specified.
+     * @param torrentInfo torrent file information
+     * @param saveDirectory the directory where the torrent file will be saved
+     * @return `true` if the torrent file meets the criteria for downloading; `false` otherwise.
+     */
     private fun isTorrentOkay(
         torrentInfo: TorrentInfo,
         saveDirectory: File
@@ -306,6 +353,10 @@ class FOCCommunity(
         return false
     }
 
+    /**
+     *This function decrypts and processes the incoming packet containing an application payload.
+     * @param packet the incoming packet
+     */
     private fun onAppPacket(packet: Packet) {
         val (peer, payload) =
             packet.getDecryptedAuthPayload(
@@ -315,6 +366,7 @@ class FOCCommunity(
         logger.debug { "<- Received app from ${peer.mid}" }
         val file = appDirectory.toString() + "/" + payload.appName
         val existingFile = File(file)
+        Log.i("send-app", "Received app packet of size: ${payload.data.size} Bytes")
         if (!existingFile.exists()) {
             try {
                 val os = FileOutputStream(file)
@@ -327,6 +379,13 @@ class FOCCommunity(
         }
     }
 
+    /**
+     * This function is invoked when the EVA send operation to a peer is completed. It logs the
+     *  completion of the send operation with the provided information.
+     *  @param peer peer involved in callback
+     *  @param info additional information associated with send operation
+     *  @param nonce nonce value associated with operation
+     */
     private fun onEVASendCompleteCallback(
         peer: Peer,
         info: String,
@@ -341,6 +400,13 @@ class FOCCommunity(
         }
     }
 
+    /**
+     *This function is invoked when the EVA receive operation progresses with the provided information
+     * It logs the progress of the receive operation with the provided information.
+     * @param peer peer involved in callback
+     * @param info additional information associated with send operation
+     * @param progress the progress details of the receive operation
+     */
     private fun onEVAReceiveProgressCallback(
         peer: Peer,
         info: String,
@@ -355,6 +421,15 @@ class FOCCommunity(
         }
     }
 
+    /**
+     *This function is invoked when the EVA receive operation to a peer is completed. It logs the
+     *completion of the receive operation with the provided information.
+     * @param peer peer involved in callback
+     * @param info additional information associated with send operation
+     * @param id The ID associated with the receive operation.
+     * @param data The data received in the EVA operation, if available.
+     *
+     */
     private fun onEVAReceiveCompleteCallback(
         peer: Peer,
         info: String,
@@ -363,6 +438,12 @@ class FOCCommunity(
     ) {
         Log.d("DemoCommunity", "ON EVA receive complete callback for '$info'")
 
+        if (info == VOTING_ATTACHMENT) {
+            data?.let {
+                val packet = Packet(peer.address, it)
+                onPullVoteMessage(packet)
+            }
+        }
         if (info != EVA_FOC_COMMUNITY_ATTACHMENT) return
 
         data?.let {
@@ -375,6 +456,12 @@ class FOCCommunity(
         }
     }
 
+    /**
+     *This function is invoked when an error occurs during an EVA operation with the specified
+     *peer and exception details. It logs the error information and invokes the registered callback
+     * @param peer peer involved in callback
+     * @param exception the exception that occurred
+     */
     private fun onEVAErrorCallback(
         peer: Peer,
         exception: TransferException
@@ -397,5 +484,6 @@ class FOCCommunity(
     companion object {
         // Use this until we can commit an id to kotlin ipv8
         const val EVA_FOC_COMMUNITY_ATTACHMENT = "eva_foc_community_attachment"
+        const val VOTING_ATTACHMENT = "voting_attachment"
     }
 }
