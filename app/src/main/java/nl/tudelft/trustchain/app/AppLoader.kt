@@ -14,6 +14,7 @@ import kotlinx.coroutines.runBlocking
 import nl.tudelft.trustchain.app.ui.dashboard.DashboardItem
 import nl.tudelft.trustchain.common.R
 import nl.tudelft.trustchain.common.freedomOfComputing.InstalledApps
+import java.util.Collections
 import java.util.stream.Collectors
 
 class AppLoader(
@@ -22,7 +23,7 @@ class AppLoader(
 ) {
     val preferredApps: List<DashboardItem>
         get() = apps.filter { it.isPreferred }
-    var apps: Set<DashboardItem>
+    var apps: Set<DashboardItem> = Collections.emptySet()
 
     @DrawableRes
     val icon = R.drawable.ic_atomic_swap_24dp
@@ -34,8 +35,8 @@ class AppLoader(
         runBlocking {
             if (firstRun) {
                 setPreferredAppList(DEFAULT_APPS)
-                InstalledApps.injectDataStore(dataStore, PREFERRED_APPS, INSTALLED_APPS)
                 apps = getAllApps().map { DashboardItem(it) }.toSet()
+                InstalledApps.injectDataStore(dataStore, PREFERRED_APPS, INSTALLED_APPS)
             } else {
                 InstalledApps.injectDataStore(dataStore, PREFERRED_APPS, INSTALLED_APPS)
                 val pApps = getPreferredAppList()
