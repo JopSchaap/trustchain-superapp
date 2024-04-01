@@ -37,7 +37,6 @@ import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.keyvault.PrivateKey
 import nl.tudelft.trustchain.foc.community.FOCCommunity
 import nl.tudelft.trustchain.foc.community.FOCVote
-import nl.tudelft.trustchain.foc.community.FOCVoteTracker
 import nl.tudelft.trustchain.foc.community.signVote
 import nl.tudelft.trustchain.foc.databinding.ActivityMainFocBinding
 import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.APK_DOT_EXTENSION
@@ -102,7 +101,6 @@ open class MainActivityFOC : AppCompatActivity() {
             }
 
             binding.torrentCount.text = getString(R.string.torrentCount, torrentAmount)
-            voteTracker.loadState(cacheDir.absolutePath + "/vote-tracker" + DATA_DOT_EXTENSION)
             copyDefaultApp()
             showAllFiles()
 
@@ -153,21 +151,34 @@ open class MainActivityFOC : AppCompatActivity() {
         progressVisible = !progressVisible
     }
 
+    /**
+     * This method is called upon starting the FreedomOfComputing app or coming back to it from
+     * another screen.
+     */
     override fun onResume() {
         super.onResume()
         resumeUISettings()
         appGossiper?.resume()
+        voteTracker.loadState(cacheDir.absolutePath + "/vote-tracker" + DATA_DOT_EXTENSION)
         val ids = HashSet<UUID>()
         voteTracker.getCurrentState().forEach { (_, u) -> u.forEach { vote -> ids.add(vote.id) } }
         focCommunity?.sendPullRequest(ids)
     }
 
+    /**
+     * This method is called upon closing the FreedomOfComputing app or going to another screen.
+     */
     override fun onPause() {
         super.onPause()
         appGossiper?.pause()
         voteTracker.storeState(cacheDir.absolutePath + "/vote-tracker" + DATA_DOT_EXTENSION)
     }
 
+    /**
+     *This function retrieves the list of files in the application's cache directory,
+     * clears the existing views in the torrent list view, clears the torrent map,
+     * and creates buttons for each file with the ".apk" extension.
+     */
     private fun showAllFiles() {
         val files = applicationContext.cacheDir.listFiles()
         if (files != null) {
@@ -182,6 +193,12 @@ open class MainActivityFOC : AppCompatActivity() {
         }
     }
 
+    /**
+     * This function retrieves the list of files in the application's cache directory,
+     * finds the file with the specified torrent name, and creates a button for it
+     * if the file exists.
+     * @param torrentName name of the torrent
+     */
     fun showAddedFile(torrentName: String) {
         val files = applicationContext.cacheDir.listFiles()
         if (files != null) {
@@ -195,6 +212,12 @@ open class MainActivityFOC : AppCompatActivity() {
         }
     }
 
+    /**
+     * This function clears the existing views in the torrent list view, clears the torrent map,
+     * retrieves the list of files in the application's cache directory, and creates buttons
+     * for files whose names contain the specified search value and have the ".apk" extension.
+     * @param searchVal The search value to look for in file names.
+     */
     private fun searchAllFiles(searchVal: String) {
         val torrentListView = binding.contentMainActivityFocLayout.torrentList
         torrentListView.removeAllViews()
@@ -243,6 +266,9 @@ open class MainActivityFOC : AppCompatActivity() {
         Toast.makeText(applicationContext, s, Toast.LENGTH_SHORT).show()
     }
 
+    /**
+     * This method is used to create the blue button for an APK once it is successfully torrent.
+     */
     private fun createSuccessfulTorrentButton(uri: Uri) {
         val fileName = getFileName(uri)
         val torrentListView = binding.contentMainActivityFocLayout.torrentList
@@ -310,6 +336,10 @@ open class MainActivityFOC : AppCompatActivity() {
         }
     }
 
+    /**
+     * This method is used to update the vote count for an APK. It isn't called anywhere in this
+     * file, but it gets called from FOCCommunity upon receiving gossiped votes.
+     */
     fun updateVoteCounts(fileName: String) {
         val torrentListView = binding.contentMainActivityFocLayout.torrentList
         val row = torrentListView.findViewById<LinearLayout>(fileName.hashCode()) ?: return
@@ -324,6 +354,9 @@ open class MainActivityFOC : AppCompatActivity() {
         Log.i("vote-gossip", "Vote Count updated!")
     }
 
+    /**
+     * This method is used to create the grey button for an APK when torrent is still in progress.
+     */
     fun createUnsuccessfulTorrentButton(torrentName: String) {
         val torrentListView = binding.contentMainActivityFocLayout.torrentList
         val row = LinearLayout(this)
@@ -360,6 +393,9 @@ open class MainActivityFOC : AppCompatActivity() {
         button.isAllCaps = false
     }
 
+    /**
+     * This method created the popup modal when you press and hold on an APK.
+     */
     private fun createAlertDialog(fileName: String) {
         val builder: AlertDialog.Builder = AlertDialog.Builder(this)
         builder.setTitle(getString(R.string.createAlertDialogTitle))
@@ -370,6 +406,10 @@ open class MainActivityFOC : AppCompatActivity() {
         builder.show()
     }
 
+    /**
+     * Method that created the modal that shows up when you click the + sign in the bottom right
+     * hand corner of the FreedomOfComputing app.
+     */
     private fun createDownloadDialog() {
         val builder: AlertDialog.Builder = AlertDialog.Builder(this)
         builder.setTitle(getString(R.string.createDownloadDialogTitle))
@@ -398,6 +438,9 @@ open class MainActivityFOC : AppCompatActivity() {
         builder.show()
     }
 
+    /**
+     * This method is called from the alert dialog modal, when the user presses DELETE.
+     */
     private fun deleteApkFile(fileName: String) {
         val files = applicationContext.cacheDir.listFiles()
         if (files != null) {
@@ -433,6 +476,12 @@ open class MainActivityFOC : AppCompatActivity() {
         }
     }
 
+    /**
+     * Method to place vote when button is clicked. Updates own voteMap and also
+     * aims to send its update to other peers
+     * @param fileName name of the torrent
+     * @param isUpVote true if upVote button clicked, false if downVote button clicked
+     */
     private fun placeVote(
         fileName: String,
         isUpVote: Boolean

@@ -48,6 +48,13 @@ data class FOCSignedVote(val id: UUID, val vote: FOCVote, private val signature:
         }
     }
 
+    /**
+     *This function compares this [FOCSignedVote] object with the specified object for equality.
+     *Returns `true` if the specified object is also a [FOCSignedVote] and both objects
+     *have the same values for their `vote`, `signature`, and `publicKeyBin` properties.
+     * @param other the reference object with which to compare
+     * @return `true` if this object is the same as the [other] argument; `false` otherwise.
+     */
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -61,6 +68,11 @@ data class FOCSignedVote(val id: UUID, val vote: FOCVote, private val signature:
         return true
     }
 
+    /**
+     *This function calculates a hash code value for this [FOCSignedVote] object based on its
+     *`vote`, `signature`, and `publicKeyBin` properties.
+     * @return A hash code value for this object.
+     */
     override fun hashCode(): Int {
         var result = vote.hashCode()
         result = 31 * result + signature.contentHashCode()
