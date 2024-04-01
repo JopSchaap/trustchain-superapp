@@ -93,7 +93,6 @@ object InstalledApps {
                 }
             }
         }
-
     }
 
     /**

@@ -11,13 +11,12 @@ import org.junit.Test
 import java.util.Collections
 
 const val INSTALL_FUNC = "install"
-class InstalledAppsTest {
 
+class InstalledAppsTest {
     private var installedApps = InstalledApps
     private lateinit var dataStoreMock: DataStore<Preferences>
     private var preferredAppsKey: Preferences.Key<Set<String>> = mockk()
     private var installedappskey: Preferences.Key<Set<String>> = mockk()
-
 
     @Before
     fun setup() {
