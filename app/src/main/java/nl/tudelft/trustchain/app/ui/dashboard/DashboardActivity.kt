@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import com.mattskala.itemadapter.ItemAdapter
@@ -49,8 +48,6 @@ class DashboardActivity : AppCompatActivity() {
 
         adapter.registerRenderer(
             DashboardItemRenderer {
-                Log.i("foc installer", "dashboard")
-
                 val intent = it.app.getIntent(this)
                 startActivity(intent)
             }

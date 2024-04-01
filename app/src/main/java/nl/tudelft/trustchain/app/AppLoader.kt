@@ -34,39 +34,30 @@ class AppLoader(
     init {
         runBlocking {
             if (firstRun) {
+                // initializes the default installed apps
                 setPreferredAppList(DEFAULT_APPS)
-                apps = getAllApps().map { DashboardItem(it) }.toSet()
-                InstalledApps.injectDataStore(dataStore, PREFERRED_APPS, INSTALLED_APPS)
-            } else {
-                InstalledApps.injectDataStore(dataStore, PREFERRED_APPS, INSTALLED_APPS)
-                val pApps = getPreferredAppList()
-                val tempApps =
-                    getAllApps().map { app ->
-                        DashboardItem(
-                            app,
-                            isPreferred = pApps.contains(app.appName)
-                        )
-                    }.toMutableSet()
-                apps = tempApps.toSet()
             }
+            // inject datastore to Installed apps to allow installing foc apps
+            InstalledApps.injectDataStore(dataStore, PREFERRED_APPS, INSTALLED_APPS)
+            // Update the app list
+            update()
         }
     }
 
+    /**
+     * Updates the app list, should be called at least whenever a new app is installed
+     * or when the preferred apps are changed
+     */
     fun update() =
         runBlocking {
+            val pApps = getPreferredAppList()
             apps =
-                if (firstRun) {
-                    setPreferredAppList(DEFAULT_APPS)
-                    getAllApps().map { DashboardItem(it) }.toSet()
-                } else {
-                    val pApps = getPreferredAppList()
-                    getAllApps().map { app ->
-                        DashboardItem(
-                            app,
-                            isPreferred = pApps.contains(app.appName)
-                        )
-                    }.toSet()
-                }
+                getAllApps().map { app ->
+                    DashboardItem(
+                        app,
+                        isPreferred = pApps.contains(app.appName)
+                    )
+                }.toSet()
         }
 
     private suspend fun getAllApps(): Set<AppDefinition> {
