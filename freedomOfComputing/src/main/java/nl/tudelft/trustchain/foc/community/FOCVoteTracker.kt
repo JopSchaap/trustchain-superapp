@@ -162,6 +162,9 @@ class FOCVoteTracker(
         return voteMap[fileName]!!.count { v -> v.vote.voteType == voteType }
     }
 
+    /**
+     * Checks whether any threshold for install is reached and if so installs the app.
+     */
     private fun checkThresholds() {
         for (fileName in voteMap.keys) {
             val upVotes = getNumberOfVotes(fileName, VoteType.UP)
