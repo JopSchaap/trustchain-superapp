@@ -1,8 +1,10 @@
 package nl.tudelft.trustchain.foc
 
 import android.util.Log
+import nl.tudelft.trustchain.common.freedomOfComputing.InstalledApps
 import nl.tudelft.trustchain.foc.community.FOCSignedVote
 import nl.tudelft.trustchain.foc.community.FOCVote
+import nl.tudelft.trustchain.foc.util.ExtensionUtils
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -16,6 +18,7 @@ import java.io.ObjectOutputStream
 object FOCVoteTracker {
     // Stores the votes for all apks
     private var voteMap: HashMap<String, HashSet<FOCSignedVote>> = HashMap()
+    private val thresholdForInstall = 10
 
     /**
      * Gets called on pause (or shutdown) of the app to persist state
@@ -69,6 +72,19 @@ object FOCVoteTracker {
         } else {
             voteMap[fileName] = hashSetOf(signedVote)
         }
+        this.checkThresholds()
+    }
+
+    /**
+     * Checks whether any threshold for install is reached and if so installs the app.
+     */
+    private fun checkThresholds() {
+        for (fileName in voteMap.keys) {
+            val upVotes = getNumberOfVotes(fileName, true)
+            if (upVotes >= thresholdForInstall && upVotes - getNumberOfVotes(fileName, false) >= thresholdForInstall) {
+                InstalledApps.addApp(fileName.removeSuffix(ExtensionUtils.APK_DOT_EXTENSION))
+            }
+        }
     }
 
     /**
@@ -83,6 +99,7 @@ object FOCVoteTracker {
                 voteMap[key] = votes
             }
         }
+        this.checkThresholds()
         Log.i("pull-based", "Merged maps")
     }
 
