@@ -17,8 +17,6 @@ import org.junit.Before
 import org.junit.Test
 import java.io.File
 import java.util.Collections
-import io.mockk.*
-import android.util.Log
 import java.util.UUID
 
 class FOCVoteTrackerTest {
@@ -130,8 +128,8 @@ class FOCVoteTrackerTest {
         voteMap["test.apk"] = HashSet()
 
         // Create incorrectly signed votes
-        val signedVote1 = FOCSignedVote(baseVote1, signKey1, privateKey2.pub().keyToBin())
-        val signedVote2 = FOCSignedVote(baseVote2, signKey2, privateKey1.pub().keyToBin())
+        val signedVote1 = FOCSignedVote(UUID.randomUUID(), baseVote1, signKey1, privateKey2.pub().keyToBin())
+        val signedVote2 = FOCSignedVote(UUID.randomUUID(), baseVote2, signKey2, privateKey1.pub().keyToBin())
 
         voteMap["test.apk"]?.add(signedVote1)
         voteMap["test.apk"]?.add(signedVote2)
