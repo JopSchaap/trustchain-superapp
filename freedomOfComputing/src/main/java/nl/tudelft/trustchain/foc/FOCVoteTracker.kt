@@ -11,6 +11,7 @@ import java.io.File
 import java.io.IOException
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
+import java.util.UUID
 
 /**
  * FOCVoteTracker is a singleton which is responsible for keeping track of all the votes placed.
@@ -85,6 +86,26 @@ object FOCVoteTracker {
                 InstalledApps.addApp(fileName.removeSuffix(ExtensionUtils.APK_DOT_EXTENSION))
             }
         }
+    }
+
+    /**
+     * Method to get the votes we want to respond with for a pull request.
+     * @param ids Set of vote ids that they already have
+     */
+    fun getVotesToSend(ids: HashSet<UUID>): HashMap<String, HashSet<FOCSignedVote>> {
+        val res = HashMap<String, HashSet<FOCSignedVote>>()
+        voteMap.forEach { entry ->
+            entry.value.forEach { vote ->
+                if (!ids.contains(vote.id)) {
+                    if (res.containsKey(entry.key)) {
+                        res[entry.key]!!.add(vote)
+                    } else {
+                        res[entry.key] = hashSetOf(vote)
+                    }
+                }
+            }
+        }
+        return res
     }
 
     /**

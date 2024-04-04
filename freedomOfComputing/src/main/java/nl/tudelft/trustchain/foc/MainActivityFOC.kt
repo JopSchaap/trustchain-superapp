@@ -52,6 +52,7 @@ import java.io.OutputStream
 import java.net.URL
 import java.net.URLConnection
 import nl.tudelft.ipv8.keyvault.PrivateKey
+import java.util.UUID
 
 const val CONNECTION_TIMEOUT: Int = 10000
 const val READ_TIMEOUT: Int = 5000
@@ -160,7 +161,9 @@ open class MainActivityFOC : AppCompatActivity() {
         resumeUISettings()
         appGossiper?.resume()
         voteTracker.loadState(cacheDir.absolutePath + "/vote-tracker" + DATA_DOT_EXTENSION)
-        focCommunity?.sendPullVotesMessage()
+        val ids = HashSet<UUID>()
+        voteTracker.getCurrentState().forEach { (_, u) -> u.forEach { vote -> ids.add(vote.id) } }
+        focCommunity?.sendPullRequest(ids)
     }
 
     /**
