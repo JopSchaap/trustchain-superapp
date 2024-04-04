@@ -63,7 +63,6 @@ object FOCVoteTracker {
         signedVote: FOCSignedVote
     ) {
         // Check the signature of the vote
-        // TODO should somehow check if pub-key is associated to person that placed the vote
         if (checkAndGet(signedVote) == null) {
             Log.w("vote-gossip", "received vote with invalid pub-key signature combination!")
             return
@@ -164,7 +163,6 @@ object FOCVoteTracker {
      * Checks the signature of the signed vote and if the signature is correct and the signer is verified returns the vote object else returns null.
      */
     private fun checkAndGet(signedVote: FOCSignedVote): FOCVote? {
-        // TODO Should somehow verify the pub-key is associated to a known user
         return signedVote.checkAndGet()
     }
 
