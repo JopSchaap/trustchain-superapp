@@ -353,6 +353,7 @@ open class MainActivityFOC : AppCompatActivity() {
         downVote.text =
             getString(R.string.downVote, voteTracker.getNumberOfVotes(fileName, false))
         Log.i("vote-gossip", "Vote Count updated!")
+        binding.debugLayout.numberVotesTotalCounter.text = getString(R.string.numberVotesTotal, voteTracker.getTotalNumberOfVotes())
     }
 
     /**
