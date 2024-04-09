@@ -321,11 +321,13 @@ open class MainActivityFOC : AppCompatActivity() {
             placeVote(fileName, true)
             upVote.text =
                 getString(R.string.upVote, voteTracker.getNumberOfVotes(fileName, true))
+            binding.debugLayout.numberVotesTotalCounter.text = getString(R.string.numberVotesTotal, voteTracker.getTotalNumberOfVotes())
         }
         downVote?.setOnClickListener {
             placeVote(fileName, false)
             downVote.text =
                 getString(R.string.downVote, voteTracker.getNumberOfVotes(fileName, false))
+            binding.debugLayout.numberVotesTotalCounter.text = getString(R.string.numberVotesTotal, voteTracker.getTotalNumberOfVotes())
         }
 
         button.setOnClickListener {
