@@ -136,37 +136,60 @@ within the community.
 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/create_torrent_animation.gif" alt="GIF displaying how to create torrents from apks">
 
-### Downloading the seeding torrent, as a recipient
-# todo 
-
 ### Executing the downloaded apk
 
-The user can press the displayed buttons containing the name of the specific .apk to execute it.
+The user can press the displayed buttons containing the name of the specific .apk to execute it. In order to execute it, the apk 
+must be fully downloaded (when the apk is highlighted blue). 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/run_search_apk.gif" alt="GIF displaying how to execute apks">
 
 
-### Voting 
-A new component to the FOC superapp is the voting. When a user first joins the FOC community, or opens the FOC community screen
-, it makes a pull request to the other peers in the community asking for votes on apks it does not have. These votes are then gossiped
-to the user and is updated on the screen. The gif below displays the first time a new user joins the FOC community. The default 
-search.apk is already loaded in but the two new apks with their associated votes have been gossiped. 
+### Voting System 
+A new component to the FOC superapp is the voting system. When a user first joins the FOC community, or opens the FOC community screen
+, they make a pull request to the other peers in the community asking for votes on apks it does not have. It does this through the EVA 
+protocol. The user sends a list of vote ids that it has to its peers. The peers then do a check between their local vote storage and  
+the incoming storage. Votes that do not intersect are then gossiped to the user and is consequently updated in the user interface. 
+The gif below displays the first time a new user joins the FOC community. The default search.apk is already loaded in but the two new 
+apks with their associated votes have been gossiped.
 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/pull_based.gif" alt="GIF displaying pull based gossip">
 
-When a user is using the FOC community app and peers are voting for apks. The new votes are pushed to the user using "hot potato"
-gossiping. 
+While a user engages with the FOC community app and peers are casting votes for APKs, new votes are delivered to the user 
+through "hot potato" gossiping. In our setup, the push-based gossiping cycles log(n) times where n is the number of directly connected
+peers before ceasing to be multicasted. The GIF below demonstrates the upvote counter of 
+the app.debug.apk increasing by one, facilitated by a push-based gossip from another peer.
 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/push_based.gif" alt="GIF displaying push based gossip">
 
 Once an apk reaches a certain threshold of positive votes (# of upvotes - # of downvotes), the apk will be moved to the user's 
 homescreen and they can execute the apk on the homescreen as well. The gif below displays this happening with a threshold of three
-votes. 
-
+votes.
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/add_to_homescreen.gif" alt="GIF displaying apk being added to homescreen">
 
 
+### Notable Decisions 
+# todo 
 
+### Limitations of protocols 
+# todo 
 
+### Future work 
+One potential area for future improvement involves enhancing the pull-based gossiping mechanism.
+As mentioned earlier, the current approach utilizes IDs to transmit requests, with the response comprising 
+a collection of new vote messages. There's potential to decrease message size by employing short IDs (short unique IDs),
+and even more significantly, by incorporating set reconciliation.
+This technique enables smaller message sizes and enhances scalability for accommodating a larger number of votes.
 
+Another prospective for future work involves enabling the removal of APKs that have been automatically installed 
+on users' home screens. This functionality can be implemented either manually by the user or automatically 
+if an APK no longer meets the required vote threshold. 
+
+### Testing and coverage  
+
+The new classes with heavy logic that required testing were `FOCVoteTracker` and `FOCSignedVote` class. For the `FOCVoteTracker`
+class, we reached 100% method coverage with 90% of lines covered (The missing lines are just mainly console log statements used 
+for debugging) and on the `FOCSignedVote` class, we reached 100% method coverage and 100% line coverage. 
+
+We've made sure to include detailed KDocs for all new and most existing methods. 
+These documents cover parameters, return statements, and provide an overview of each method's functionality.
 
 
