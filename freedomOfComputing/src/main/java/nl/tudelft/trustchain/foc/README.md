@@ -103,7 +103,9 @@ placed. It contains the `fileName` of the APK on which the vote is placed, the
 to 2. The `TTL` sets how many times this vote should be forwarded.
 
 ### FOCPullVoteMessage
+
 # todo (change)
+
 The `FOCPullVoteMessage` data class is the message type that is sent back after doing a pull request
 `onResume`. This message contains all the votes that our peer knows about and as such results in a
 rather big message. This means that it can't be sent using the same protocol as the other message
@@ -122,6 +124,7 @@ how this works is with the `createAlertDialogTitle` that it defines and is used 
 
 
 ## User Guide
+
 We present the main use cases of our app, step by step, through which our contributions to the whole “superapp” project become visible.
 
 The user has a .apk file they want to distribute to the rest of the peers in the superapp’s network, say “my-special.apk”.
@@ -138,58 +141,85 @@ within the community.
 
 ### Executing the downloaded apk
 
-The user can press the displayed buttons containing the name of the specific .apk to execute it. In order to execute it, the apk 
-must be fully downloaded (when the apk is highlighted blue). 
+The user can press the displayed buttons containing the name of the specific .apk to execute it. In
+order to execute it, the apk must be fully downloaded (when the apk is highlighted blue).
+
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/run_search_apk.gif" alt="GIF displaying how to execute apks">
 
 
-### Voting System 
-A new component to the FOC superapp is the voting system. When a user first joins the FOC community, or opens the FOC community screen
-, they make a pull request to the other peers in the community asking for votes on apks it does not have. It does this through the EVA 
-protocol. The user sends a list of vote ids that it has to its peers. The peers then do a check between their local vote storage and  
-the incoming storage. Votes that do not intersect are then gossiped to the user and is consequently updated in the user interface. 
-The gif below displays the first time a new user joins the FOC community. The default search.apk is already loaded in but the two new 
-apks with their associated votes have been gossiped.
+### Voting System
+
+A new component to the FOC superapp is the voting system. When a user first joins the FOC community,
+or opens the FOC community screen , they make a pull request to the other peers in the community
+asking for votes on apks it does not have. It does this through the EVA protocol. The user sends a
+list of vote ids that it has to its peers. The peers then do a check between their local vote
+storage and the incoming storage. Votes that do not intersect are then gossiped to the user and is
+consequently updated in the user interface. The gif below displays the first time a new user joins
+the FOC community. The default search.apk is already loaded in but the two new apks with their
+associated votes have been gossiped.
 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/pull_based.gif" alt="GIF displaying pull based gossip">
 
-While a user engages with the FOC community app and peers are casting votes for APKs, new votes are delivered to the user 
-through "hot potato" gossiping. In our setup, the push-based gossiping cycles log(n) times where n is the number of directly connected
-peers before ceasing to be multicasted. The GIF below demonstrates the upvote counter of 
-the app.debug.apk increasing by one, facilitated by a push-based gossip from another peer.
+While a user engages with the FOC community app and peers are casting votes for APKs, new votes are
+delivered to the user through "hot potato" gossiping. In our setup, the push-based gossiping cycles
+log(n) times where n is the number of directly connected peers before ceasing to be multicasted. The
+GIF below demonstrates the upvote counter of the app.debug.apk increasing by one, facilitated by a
+push-based gossip from another peer.
 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/push_based.gif" alt="GIF displaying push based gossip">
 
-Once an apk reaches a certain threshold of positive votes (# of upvotes - # of downvotes), the apk will be moved to the user's 
-homescreen and they can execute the apk on the homescreen as well. The gif below displays this happening with a threshold of three
-votes.
+Once an apk reaches a certain threshold of positive votes (# of upvotes - # of downvotes), the apk
+will be moved to the user's homescreen and they can execute the apk on the homescreen as well. The
+gif below displays this happening with a threshold of three votes.
+
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/add_to_homescreen.gif" alt="GIF displaying apk being added to homescreen">
 
 
-### Notable Decisions 
-# todo 
+### Notable Decisions
 
-### Limitations of protocols 
-# todo 
+TODO
 
-### Future work 
+### Current Limitations
+
+One of the limitations with our current system is that the size of the messages exchanged for
+communicating votes is rather large. This is especially the case for the pull-based gossiping where
+when we're just 8 votes behind the response takes 2376 Bytes. This might not seem like much, but
+considering that we currently ask all our neighbours as part of the pull-based gossiping protocol
+this could become problematic if there are a lot of votes placed. In the scenario where there are
+millions of votes and which a first time has to catch up on whilst using mobile data, it could see
+them burn through their monthly allocation at once. Potential solutions could include: reducing the
+message size, catching up on votes gradually over time and/or limiting the number of neighbours we
+query upon joining.
+
+Another limitation also relates to the scalability of the voting system. Currently `FOCVoteTracker`
+stores votes in a dictionary which is kept in memory and only stored to file `onPause`, which could
+be problematic if there are millions of votes placed. In such a scenario it may be better to use
+some sort of local database such as [SQLite](https://www.sqlite.org) for example.
+
+### Future Work
+
+Besides addressing the current limitations listed above, here are some other features/improvements
+that we think would be good to implement in the future.
+
 One potential area for future improvement involves enhancing the pull-based gossiping mechanism.
-As mentioned earlier, the current approach utilizes IDs to transmit requests, with the response comprising 
-a collection of new vote messages. There's potential to decrease message size by employing short IDs (short unique IDs),
-and even more significantly, by incorporating set reconciliation.
-This technique enables smaller message sizes and enhances scalability for accommodating a larger number of votes.
+As mentioned earlier, the current approach utilizes IDs to transmit requests, with the response
+comprising a collection of new vote messages. There's potential to decrease message size by
+employing short IDs (short unique IDs), and even more significantly, by incorporating set
+reconciliation. This technique enables smaller message sizes and enhances scalability for
+accommodating a larger number of votes.
 
-Another prospective for future work involves enabling the removal of APKs that have been automatically installed 
-on users' home screens. This functionality can be implemented either manually by the user or automatically 
-if an APK no longer meets the required vote threshold. 
+Another prospective for future work involves enabling the removal of APKs that have been
+automatically installed on users' home screens. This functionality can be implemented either
+manually by the user or automatically if an APK no longer meets the required vote threshold.
 
-### Testing and coverage  
+### Testing and coverage
 
-The new classes with heavy logic that required testing were `FOCVoteTracker` and `FOCSignedVote` class. For the `FOCVoteTracker`
-class, we reached 100% method coverage with 90% of lines covered (The missing lines are just mainly console log statements used 
-for debugging) and on the `FOCSignedVote` class, we reached 100% method coverage and 100% line coverage. 
+The new classes with heavy logic that required testing were `FOCVoteTracker` and `FOCSignedVote`
+class. For the `FOCVoteTracker` class, we reached 100% method coverage with 90% of lines covered
+(The missing lines are just mainly console log statements used for debugging) and on
+the `FOCSignedVote` class, we reached 100% method coverage and 100% line coverage.
 
-We've made sure to include detailed KDocs for all new and most existing methods. 
-These documents cover parameters, return statements, and provide an overview of each method's functionality.
+We've made sure to include detailed KDocs for all new and most existing methods. These documents
+cover parameters, return statements, and provide an overview of each method's functionality.
 
 
