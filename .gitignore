@@ -1,4 +1,5 @@
-build
+**/build/*
+!**/build/**/*.apk
 .idea
 *.iml
 local.properties
