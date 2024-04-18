@@ -57,7 +57,8 @@ import java.util.UUID
 const val CONNECTION_TIMEOUT: Int = 10000
 const val READ_TIMEOUT: Int = 5000
 
-const val DEFAULT_APK = "search.apk"
+const val SEARCH_APK = "search.apk"
+const val HELLOWORLD_APK = "helloworld.apk"
 
 open class MainActivityFOC : AppCompatActivity() {
     lateinit var binding: ActivityMainFocBinding
@@ -102,7 +103,8 @@ open class MainActivityFOC : AppCompatActivity() {
             }
 
             binding.torrentCount.text = getString(R.string.torrentCount, torrentMap.size)
-            copyDefaultApp()
+            copyDefaultApp(SEARCH_APK)
+            copyDefaultApp(HELLOWORLD_APK)
             showAllFiles()
 
             focCommunity = IPv8Android.getInstance().getOverlay<FOCCommunity>()
@@ -237,15 +239,15 @@ open class MainActivityFOC : AppCompatActivity() {
     /**
      * Ensures that there will always be one apk runnable from within FoC.
      */
-    private fun copyDefaultApp() {
+    private fun copyDefaultApp(fileName: String) {
         try {
-            val file = File(this.applicationContext.cacheDir.absolutePath + "/" + DEFAULT_APK)
+            val file = File(this.applicationContext.cacheDir.absolutePath + "/" + fileName)
             if (!file.exists()) {
                 val outputStream = FileOutputStream(file)
                 val ins =
                     resources.openRawResource(
                         resources.getIdentifier(
-                            DEFAULT_APK.split('.').first(),
+                            SEARCH_APK.split('.').first(),
                             "raw",
                             packageName
                         )
@@ -253,7 +255,7 @@ open class MainActivityFOC : AppCompatActivity() {
                 outputStream.write(ins.readBytes())
                 ins.close()
                 outputStream.close()
-                this.createTorrent(DEFAULT_APK)
+                this.createTorrent(SEARCH_APK)
             }
         } catch (e: Exception) {
             this.printToast(e.toString())
