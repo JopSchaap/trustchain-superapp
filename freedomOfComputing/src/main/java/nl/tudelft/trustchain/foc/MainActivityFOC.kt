@@ -61,6 +61,8 @@ const val SEARCH_APK = "search.apk"
 const val HELLOWORLD_APK = "helloworld.apk"
 const val COUNTER_APK = "counter.apk"
 const val FLASHLIGHT_APK = "flashlight.apk"
+const val DATE_APK = "date.apk"
+const val DUCK_DUCK_GO_APK = "duck_duck_go.apk"
 
 open class MainActivityFOC : AppCompatActivity() {
     lateinit var binding: ActivityMainFocBinding
@@ -109,6 +111,8 @@ open class MainActivityFOC : AppCompatActivity() {
             copyDefaultApp(HELLOWORLD_APK)
             copyDefaultApp(COUNTER_APK)
             copyDefaultApp(FLASHLIGHT_APK)
+            copyDefaultApp(DATE_APK)
+            copyDefaultApp(DUCK_DUCK_GO_APK)
             showAllFiles()
 
             focCommunity = IPv8Android.getInstance().getOverlay<FOCCommunity>()
