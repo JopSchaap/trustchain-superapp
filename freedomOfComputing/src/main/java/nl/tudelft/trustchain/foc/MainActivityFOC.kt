@@ -59,6 +59,8 @@ const val READ_TIMEOUT: Int = 5000
 
 const val SEARCH_APK = "search.apk"
 const val HELLOWORLD_APK = "helloworld.apk"
+const val COUNTER_APK = "counter.apk"
+const val FLASHLIGHT_APK = "flashlight.apk"
 
 open class MainActivityFOC : AppCompatActivity() {
     lateinit var binding: ActivityMainFocBinding
@@ -105,6 +107,8 @@ open class MainActivityFOC : AppCompatActivity() {
             binding.torrentCount.text = getString(R.string.torrentCount, torrentMap.size)
             copyDefaultApp(SEARCH_APK)
             copyDefaultApp(HELLOWORLD_APK)
+            copyDefaultApp(COUNTER_APK)
+            copyDefaultApp(FLASHLIGHT_APK)
             showAllFiles()
 
             focCommunity = IPv8Android.getInstance().getOverlay<FOCCommunity>()
