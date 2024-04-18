@@ -172,13 +172,14 @@ the app.debug.apk increasing by one, facilitated by a push-based gossip from ano
 
 Once an apk reaches a certain threshold of positive votes (# of upvotes - # of downvotes), the apk
 will be moved to the user's homescreen and they can execute the apk on the homescreen as well. The
-gif below displays this happening with a threshold of three votes.
+gif below displays this happening with a threshold of three votes. 
+This is done by storing it in the preference store of the app submodule. 
+Then the home screen whenever it launches reads what apps are installed and places these on the home screen.
+For more information on how this works we recommend to look at the following two files:
+* `app/src/main/java/nl/tudelft/trustchain/app/AppLoader.kt`
+* `common/src/main/java/nl/tudelft/trustchain/common/freedomOfComputing/InstalledApps.kt`
 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/add_to_homescreen.gif" alt="GIF displaying apk being added to homescreen">
-
-## Installing to Home Screen
-
-TODO
 
 # Concluding our Project
 
