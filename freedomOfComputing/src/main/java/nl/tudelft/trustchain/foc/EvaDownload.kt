@@ -3,7 +3,7 @@ package nl.tudelft.trustchain.foc
 import nl.tudelft.ipv8.Peer
 
 data class EvaDownload(
-    var activeDownload: Boolean = true,
+    var activeDownload: Boolean = false,
     var lastRequest: Long? = null,
     var magnetInfoHash: String = "",
     var peer: Peer? = null,
