@@ -174,6 +174,9 @@ gif below displays this happening with a threshold of three votes.
 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/add_to_homescreen.gif" alt="GIF displaying apk being added to homescreen">
 
+### Installing to Home Screen
+
+TODO
 
 ### Notable Decisions
 
