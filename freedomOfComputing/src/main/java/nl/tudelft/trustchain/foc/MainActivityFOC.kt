@@ -255,7 +255,7 @@ open class MainActivityFOC : AppCompatActivity() {
                 val ins =
                     resources.openRawResource(
                         resources.getIdentifier(
-                            SEARCH_APK.split('.').first(),
+                            fileName.split('.').first(),
                             "raw",
                             packageName
                         )
@@ -263,7 +263,7 @@ open class MainActivityFOC : AppCompatActivity() {
                 outputStream.write(ins.readBytes())
                 ins.close()
                 outputStream.close()
-                this.createTorrent(SEARCH_APK)
+                this.createTorrent(fileName)
             }
         } catch (e: Exception) {
             this.printToast(e.toString())
