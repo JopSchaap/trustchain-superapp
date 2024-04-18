@@ -102,15 +102,20 @@ placed. It contains the `fileName` of the APK on which the vote is placed, the
 [FOCSignedVote](#focsignedvote) that is being placed and a `TTL` (time to live) which is initialized
 to 2. The `TTL` sets how many times this vote should be forwarded.
 
+### FOCPullRequestMessage
+
+The `FOCPullRequestMessage` is the message that is sent out when rejoining the network. In this
+message we include the ids of all the votes we know about, so that our neighbours can then know
+which votes they have that we don't have. They will then respond with a
+[FOCPullVoteMessage](#focpullvotemessage).
+
 ### FOCPullVoteMessage
 
-# todo (change)
-
 The `FOCPullVoteMessage` data class is the message type that is sent back after doing a pull request
-`onResume`. This message contains all the votes that our peer knows about and as such results in a
-rather big message. This means that it can't be sent using the same protocol as the other message
-types and instead has to make use of the `EVA` protocol, which is also the protocol used for sending
-APKs to peers.
+`onResume`. This message contains all the votes that our peer knows about which we don't know about.
+If we're a first time user this can be quite a large message and so it makes use of the `EVA`
+protocol, which is the same protocol used for gossiping APKs. If there are no votes that we're
+missing, then this message will be empty.
 
 ## res
 
@@ -122,8 +127,7 @@ which is where a lot of the hardcoded strings that are needed for buttons are de
 how this works is with the `createAlertDialogTitle` that it defines and is used in the
 `createAlertDialog` method in [FOCMainActivity](#mainactivityfoc) to set the dialog title.
 
-
-## User Guide
+# User Guide
 
 We present the main use cases of our app, step by step, through which our contributions to the whole “superapp” project become visible.
 
@@ -139,15 +143,14 @@ within the community.
 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/create_torrent_animation.gif" alt="GIF displaying how to create torrents from apks">
 
-### Executing the downloaded apk
+## Executing the downloaded apk
 
 The user can press the displayed buttons containing the name of the specific .apk to execute it. In
 order to execute it, the apk must be fully downloaded (when the apk is highlighted blue).
 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/run_search_apk.gif" alt="GIF displaying how to execute apks">
 
-
-### Voting System
+## Voting System
 
 A new component to the FOC superapp is the voting system. When a user first joins the FOC community,
 or opens the FOC community screen , they make a pull request to the other peers in the community
@@ -161,10 +164,9 @@ associated votes have been gossiped.
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/pull_based.gif" alt="GIF displaying pull based gossip">
 
 While a user engages with the FOC community app and peers are casting votes for APKs, new votes are
-delivered to the user through "hot potato" gossiping. In our setup, the push-based gossiping cycles
-log(n) times where n is the number of directly connected peers before ceasing to be multicasted. The
-GIF below demonstrates the upvote counter of the app.debug.apk increasing by one, facilitated by a
-push-based gossip from another peer.
+delivered to the user through "hot potato" gossiping. Here messages are relayed at most 2 times, and
+are communicated to a log(n) number of neighbours. The GIF below demonstrates the upvote counter of
+the app.debug.apk increasing by one, facilitated by a push-based gossip from another peer.
 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/push_based.gif" alt="GIF displaying push based gossip">
 
@@ -174,15 +176,55 @@ gif below displays this happening with a threshold of three votes.
 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/add_to_homescreen.gif" alt="GIF displaying apk being added to homescreen">
 
-### Installing to Home Screen
+## Installing to Home Screen
 
 TODO
 
-### Notable Decisions
+# Concluding our Project
 
-TODO
+The goal of our project was to have a voting system in place for APKs so that users could decide
+which apps to try out and potentially install. We not only achieved that, but also did so in a way
+that can be built upon in future projects. We made sure to document our code, through this README
+amongst other things, and also added documentation for parts of the system that we didn't implement
+in order to facilitate onboarding for future teams. We also made sure to write unit tests for our
+code to minimize bugs.
 
-### Current Limitations
+## Testing and coverage
+
+The new classes with heavy logic that required testing were `FOCVoteTracker` and `FOCSignedVote`
+class. For the `FOCVoteTracker` class, we reached 100% method coverage with 90% of lines covered
+(The missing lines are just mainly console log statements used for debugging) and on
+the `FOCSignedVote` class, we reached 100% method coverage and 100% line coverage.
+
+We've made sure to include detailed KDocs for all new and most existing methods. These documents
+cover parameters, return statements, and provide an overview of each method's functionality.
+
+## Key Decisions
+
+One key decision we made in this project was how to gossip votes. Our first idea was that we could
+periodically gossip all the votes we knew about. Whilst this was a good starting point it was not a
+very efficient way of gossiping votes and didn't scale well. So after several iterations of
+improvements focusing on reducing the latency and message size, we developed the current gossiping
+protocol which is comprised of a push protocol and a pull protocol.
+
+The push gossip happens when a user places a vote, and tries to inform other users that are
+currently connected of this vote. To do this we decided to use a Hot Potato gossip where the
+time-to-live (TTL) is hardcoded to 2. This is to avoid the same votes being gossiped around
+continuously, whilst also making sure that we're informed about votes from peers with which we
+aren't directly connected. This parameter may have to be tuned as the network grows. We also only
+inform log(n) of our direct neighbors about this vote, in order to prevent flooding the network
+completely and ensuring the scalability of this system.
+
+The second gossiping protocol we have uses a pull-based approach. This is triggered when a user
+joins the network and wants to be informed about votes they've missed. Originally we made it so that
+all peers would respond with all the votes they knew about. Whilst this was simpler, it wasn't very
+scalable and it is fair to assume that a lot of votes would be repeated. As a result, we decided to
+include the ids of the votes we already knew on the request so that each peer would only respond
+with the votes we're missing. This would mean that the requests would be slightly larger but this
+should scale better, as all the responses will be significantly smaller when we have some prior
+votes.
+
+## Current Limitations
 
 One of the limitations with our current system is that the size of the messages exchanged for
 communicating votes is rather large. This is especially the case for the pull-based gossiping where
@@ -191,15 +233,15 @@ considering that we currently ask all our neighbours as part of the pull-based g
 this could become problematic if there are a lot of votes placed. In the scenario where there are
 millions of votes and which a first time has to catch up on whilst using mobile data, it could see
 them burn through their monthly allocation at once. Potential solutions could include: reducing the
-message size, catching up on votes gradually over time and/or limiting the number of neighbours we
-query upon joining.
+message size, catching up on votes gradually over time by iteratively asking peers and/or limiting
+the number of neighbours we query upon joining the network.
 
 Another limitation also relates to the scalability of the voting system. Currently `FOCVoteTracker`
 stores votes in a dictionary which is kept in memory and only stored to file `onPause`, which could
 be problematic if there are millions of votes placed. In such a scenario it may be better to use
 some sort of local database such as [SQLite](https://www.sqlite.org) for example.
 
-### Future Work
+## Future Work
 
 Besides addressing the current limitations listed above, here are some other features/improvements
 that we think would be good to implement in the future.
@@ -214,15 +256,3 @@ accommodating a larger number of votes.
 Another prospective for future work involves enabling the removal of APKs that have been
 automatically installed on users' home screens. This functionality can be implemented either
 manually by the user or automatically if an APK no longer meets the required vote threshold.
-
-### Testing and coverage
-
-The new classes with heavy logic that required testing were `FOCVoteTracker` and `FOCSignedVote`
-class. For the `FOCVoteTracker` class, we reached 100% method coverage with 90% of lines covered
-(The missing lines are just mainly console log statements used for debugging) and on
-the `FOCSignedVote` class, we reached 100% method coverage and 100% line coverage.
-
-We've made sure to include detailed KDocs for all new and most existing methods. These documents
-cover parameters, return statements, and provide an overview of each method's functionality.
-
-
