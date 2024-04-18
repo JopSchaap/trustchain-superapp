@@ -256,9 +256,9 @@ class AppGossiper(
             if (!downloadingPaused) {
                 try {
                     downloadPendingFiles()
-                    if (evaDownload.activeDownload && evaDownload.lastRequest?.let { it ->
+                    if (evaDownload.activeDownload && (evaDownload.lastRequest?.let { it ->
                             System.currentTimeMillis() - it
-                        } ?: 0 > 30 * 1000
+                        } ?: 0) > 5 * 1000
                     ) {
                         activity.runOnUiThread { printToast("EVA Protocol timed out, retrying") }
                         retryActiveEvaDownload()
