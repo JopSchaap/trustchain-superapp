@@ -161,6 +161,8 @@ open class MainActivityFOC : AppCompatActivity() {
         resumeUISettings()
         appGossiper?.resume()
         voteTracker.loadState(cacheDir.absolutePath + "/vote-tracker" + DATA_DOT_EXTENSION)
+        val files = applicationContext.cacheDir.listFiles()
+        files?.forEach { file -> updateVoteCounts(file.name) }
         val ids = HashSet<UUID>()
         voteTracker.getCurrentState().forEach { (_, u) -> u.forEach { vote -> ids.add(vote.id) } }
         focCommunity?.sendPullRequest(ids)

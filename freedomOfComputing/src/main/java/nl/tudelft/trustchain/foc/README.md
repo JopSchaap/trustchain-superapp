@@ -181,6 +181,46 @@ For more information on how this works we recommend to look at the following two
 
 <img height="600" src="../../../../../../../../doc/freedomOfComputing/add_to_homescreen.gif" alt="GIF displaying apk being added to homescreen">
 
+
+## Benchmarking
+
+### Initial iteration
+for pull-based gossiping we initially used queues which would periodically be checked to update the users current vote state.
+To improve this, we made `FOCVoteTracker` a singleton class to remove dependencies that caused the speed to be decreased.
+Furthermore, we found that Pull Based gossiping couldn't scale as the message would eventually get too big,
+so we switched to using the EVA protocol and tested that it scales (tested up to 50 votes). The graph below displays the improvement
+in the scalability .
+
+<img height="600" src="../../../../../../../../doc/freedomOfComputing/benchmark_pull_based_gossip_size.png" alt="">
+
+Another benchmark that we measured is the total time of convergence
+from one device to 5 other devices. We defined the convergence as the time it takes for a user's pull request to be answered
+by five devices.From the image we see how the time of converges increases with regards to the numbers of votes contained by the peers.
+The graph follows a somewhat linear relation with some variation.
+
+<img height="600" src="../../../../../../../../doc/freedomOfComputing/g1.png" alt="">
+
+We then checked the total size of votes sent from a peer to the user who has done the pull request seen below.
+We see that each extra vote takes around 214 bytes.
+
+<img height="600" src="../../../../../../../../doc/freedomOfComputing/g2.png" alt="">
+
+
+
+### Second iteration
+As previously discussed, in the final pull-based approach, users submit their
+current votes and receive votes from others that are not included in their
+own collection. Our initial test examined how the size of IDs scales when a user initiates a pull request.
+
+<img height="600" src="../../../../../../../../doc/freedomOfComputing/g3.png" alt="">
+
+The graph illustrates the correlation between the size of a pull request and the number of IDs sent by an initiator to its peers.
+Notably, each ID occupies approximately 22 bytes. This utilization of IDs proves significantly more efficient
+for data management. In the optimal scenario, we can conserve up to ten times the data compared to previous methods.
+This efficiency stems from our observation that each additional vote typically requires around 214 bytes.
+When a user already possesses these votes, only the IDs are transmitted, consuming just 22 bytes,
+thus eliminating the need to transmit redundant data.
+
 # Concluding our Project
 
 The goal of our project was to have a voting system in place for APKs so that users could decide
@@ -224,6 +264,7 @@ include the ids of the votes we already knew on the request so that each peer wo
 with the votes we're missing. This would mean that the requests would be slightly larger but this
 should scale better, as all the responses will be significantly smaller when we have some prior
 votes.
+
 
 ## Current Limitations
 
