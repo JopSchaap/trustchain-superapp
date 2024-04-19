@@ -109,6 +109,7 @@ open class MainActivityFOC : AppCompatActivity() {
             focCommunity?.activity = this
             appGossiper = focCommunity?.let { AppGossiper.getInstance(s, this, it, true) }
             appGossiper?.start()
+            onResume()
         } catch (e: Exception) {
             printToast(e.toString())
         }
