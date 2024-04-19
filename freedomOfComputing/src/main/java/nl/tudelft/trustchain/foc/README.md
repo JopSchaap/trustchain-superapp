@@ -283,6 +283,8 @@ stores votes in a dictionary which is kept in memory and only stored to file `on
 be problematic if there are millions of votes placed. In such a scenario it may be better to use
 some sort of local database such as [SQLite](https://www.sqlite.org) for example.
 
+Known issue is that votes are tied to a filename, not SHA256. Those 32 Bytes would make 'filename spoofing' imposible.
+
 ## Future Work
 
 Besides addressing the current limitations listed above, here are some other features/improvements
