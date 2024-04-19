@@ -19,7 +19,7 @@ import java.util.UUID
 object FOCVoteTracker {
     // Stores the votes for all apks
     private var voteMap: HashMap<String, HashSet<FOCSignedVote>> = HashMap()
-    val thresholdForInstall = 10
+    val thresholdForInstall = 100
 
     /**
      * Gets called on pause (or shutdown) of the app to persist state
